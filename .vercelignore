@@ -1,0 +1,24 @@
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore large datasets and model artifacts (too big for Vercel upload)
+backend/data/*.parquet
+backend/data/*.csv
+backend/models/
+backend/.env
+
+# Ignore raw datasets dumped in project root
+*.csv
+*.zip
+archive*/
+submission*.csv
+
+# Ignore node_modules
+node_modules/
+frontend/node_modules/
+
+# Ignore virtual environments
+venv/
+.venv/
+env/

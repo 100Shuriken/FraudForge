@@ -1,0 +1,40 @@
+{
+    "version": 2,
+    "installCommand": "cd frontend && npm install",
+    "buildCommand": "cd frontend && npm run build",
+    "outputDirectory": "frontend/dist",
+    "rewrites": [
+        {
+            "source": "/docs",
+            "destination": "/api"
+        },
+        {
+            "source": "/redoc",
+            "destination": "/api"
+        },
+        {
+            "source": "/openapi.json",
+            "destination": "/api"
+        },
+        {
+            "source": "/api/docs",
+            "destination": "/api"
+        },
+        {
+            "source": "/api/redoc",
+            "destination": "/api"
+        },
+        {
+            "source": "/api/openapi.json",
+            "destination": "/api"
+        },
+        {
+            "source": "/api/:path*",
+            "destination": "/api"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

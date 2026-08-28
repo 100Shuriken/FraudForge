@@ -1,0 +1,180 @@
+{
+  "LAB-D66D98692BDE": {
+    "runId": "LAB-D66D98692BDE",
+    "mode": "OFFLINE FALLBACK",
+    "provenance": {
+      "source": "AI-Defense-Lab teammate module",
+      "generator": "PaymentSimulator + AttackRegistry",
+      "scorer": "FraudForge shadow risk scorer",
+      "seed": 2026,
+      "syntheticOnly": true
+    },
+    "target": {
+      "id": "C0001",
+      "city": "Mumbai",
+      "average": 2028,
+      "daily": 1,
+      "device": "D0001",
+      "stability": 0.94,
+      "frequency": 0.2,
+      "regularity": 0.86
+    },
+    "plan": {
+      "attackType": "velocity_anomaly",
+      "label": "Velocity anomaly",
+      "signal": "Transaction frequency",
+      "difficulty": "medium",
+      "intensity": 0.6,
+      "rationale": "Rolling velocity signal is 0.643 and the rolling transaction features support a burst scenario, making velocity_anomaly the strongest applicable attack.",
+      "candidates": {
+        "behavioral_drift": 0.39351,
+        "device_switch": 0.025,
+        "velocity_anomaly": 0.478571,
+        "account_takeover": 0.155383
+      }
+    },
+    "trackedAttack": null,
+    "records": [
+      {
+        "id": "VA-T000031",
+        "amount": 2421.94,
+        "hour": 12,
+        "signal": "2 txn/hr",
+        "attackType": "velocity_anomaly",
+        "isFraud": true,
+        "riskScore": 0.27,
+        "recommendedAction": "allow",
+        "riskReasons": [
+          "high amount"
+        ],
+        "confidence": 0.3273,
+        "confidenceLevel": "Low"
+      },
+      {
+        "id": "VA-T000032",
+        "amount": 2092.85,
+        "hour": 18,
+        "signal": "2 txn/hr",
+        "attackType": "velocity_anomaly",
+        "isFraud": true,
+        "riskScore": 0.27,
+        "recommendedAction": "allow",
+        "riskReasons": [
+          "high amount"
+        ],
+        "confidence": 0.3273,
+        "confidenceLevel": "Low"
+      },
+      {
+        "id": "VA-T000033",
+        "amount": 2200.3,
+        "hour": 17,
+        "signal": "2 txn/hr",
+        "attackType": "velocity_anomaly",
+        "isFraud": true,
+        "riskScore": 0.27,
+        "recommendedAction": "allow",
+        "riskReasons": [
+          "high amount"
+        ],
+        "confidence": 0.3273,
+        "confidenceLevel": "Low"
+      }
+    ],
+    "defense": {
+      "flagged": 0,
+      "total": 3,
+      "flagRate": 0.0,
+      "action": "allow"
+    }
+  },
+  "LAB-0EB61F6B2A85": {
+    "runId": "LAB-0EB61F6B2A85",
+    "mode": "OFFLINE FALLBACK",
+    "provenance": {
+      "source": "AI-Defense-Lab teammate module",
+      "generator": "PaymentSimulator + AttackRegistry",
+      "scorer": "FraudForge shadow risk scorer",
+      "seed": 2026,
+      "syntheticOnly": true
+    },
+    "target": {
+      "id": "C0001",
+      "city": "Mumbai",
+      "average": 2028,
+      "daily": 1,
+      "device": "D0001",
+      "stability": 0.94,
+      "frequency": 0.2,
+      "regularity": 0.86
+    },
+    "plan": {
+      "attackType": "velocity_anomaly",
+      "label": "Velocity anomaly",
+      "signal": "Transaction frequency",
+      "difficulty": "medium",
+      "intensity": 0.7,
+      "rationale": "Rolling velocity signal is 0.643 and the rolling transaction features support a burst scenario, making velocity_anomaly the strongest applicable attack.",
+      "candidates": {
+        "behavioral_drift": 0.246336,
+        "device_switch": 0.0,
+        "velocity_anomaly": 0.511904,
+        "account_takeover": 0.024898
+      }
+    },
+    "trackedAttack": null,
+    "records": [
+      {
+        "id": "VA-T000031",
+        "amount": 2379.45,
+        "hour": 11,
+        "signal": "2 txn/hr",
+        "attackType": "velocity_anomaly",
+        "isFraud": true,
+        "riskScore": 0.27,
+        "recommendedAction": "allow",
+        "riskReasons": [
+          "high amount"
+        ],
+        "confidence": 0.3273,
+        "confidenceLevel": "Low"
+      },
+      {
+        "id": "VA-T000032",
+        "amount": 2231.26,
+        "hour": 23,
+        "signal": "2 txn/hr",
+        "attackType": "velocity_anomaly",
+        "isFraud": true,
+        "riskScore": 0.27,
+        "recommendedAction": "allow",
+        "riskReasons": [
+          "high amount"
+        ],
+        "confidence": 0.3273,
+        "confidenceLevel": "Low"
+      },
+      {
+        "id": "VA-T000033",
+        "amount": 2162.94,
+        "hour": 17,
+        "signal": "2 txn/hr",
+        "attackType": "velocity_anomaly",
+        "isFraud": true,
+        "riskScore": 0.27,
+        "recommendedAction": "allow",
+        "riskReasons": [
+          "high amount"
+        ],
+        "confidence": 0.3273,
+        "confidenceLevel": "Low"
+      }
+    ],
+    "defense": {
+      "flagged": 0,
+      "total": 3,
+      "flagRate": 0.0,
+      "action": "allow"
+    }
+  }
+}

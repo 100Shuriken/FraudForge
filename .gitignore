@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Environment secrets & credentials (MANDATORY - Public Repo Safety)
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+*.env.local
+*.env.production
+backend/.env
+frontend/.env
+api/.env
+*.key
+*.pem
+
+# Allow environment example templates
+!*.env.example
+!**/.env.example
+
+# Large datasets, raw archives and duplicate backups
+AI-Defense-Lab*/
+*.zip
+*.parquet
+PS_20174392719_1491204439457_log.csv*
+archive*
+creditcard.csv*
+spam*.csv
+submission*.csv
+backend/data/*.parquet
+backend/data/*.csv
+backend/models/*.json
+
+# Node & Build artifacts
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.next/
+.vercel/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
