@@ -6,6 +6,7 @@ import MissionBriefing from './pages/MissionBriefing.jsx'
 import Simulate from './pages/Simulate.jsx'
 import Defend from './pages/Defend.jsx'
 import AIDefenseLab from './pages/AIDefenseLab.jsx'
+import IncidentReport from './pages/IncidentReport.jsx'
 import BeginnerAssistant from './components/BeginnerAssistant.jsx'
 import StageNavigationFooter from './components/StageNavigationFooter.jsx'
 import { useAttackContext } from './context/AttackContext.jsx'
@@ -15,6 +16,7 @@ export const NAVIGATION_STAGES = [
     { to: '/generate', label: 'Attack Studio', short: 'Attacks', icon: '🎯', num: '02', color: 'indigo' },
     { to: '/ai-defense-lab', label: 'AI Defense Lab', short: 'Defense Lab', icon: '🔬', num: '03', color: 'rose' },
     { to: '/defend', label: 'Defender ML & ROI', short: 'Defender ML', icon: '🛡️', num: '04', color: 'amber' },
+    { to: '/report', label: 'Full Incident Report', short: 'Report', icon: '📄', num: '05', color: 'indigo' },
 ]
 
 const THEME_ORDER = ['system', 'light', 'dark']
@@ -393,6 +395,7 @@ export default function App() {
                                     <Route path="/generate" element={<Simulate />} />
                                     <Route path="/ai-defense-lab" element={<AIDefenseLab />} />
                                     <Route path="/defend" element={<Defend />} />
+                                    <Route path="/report" element={<IncidentReport />} />
 
                                     {/* Backward-Compatible Redirects for Streamlined Pages */}
                                     <Route path="/identify" element={<Navigate to="/generate" replace />} />

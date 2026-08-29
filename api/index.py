@@ -259,6 +259,26 @@ async def _vercel_cockpit_benchmark(seed: int = 2026):
     return cockpit_engine.benchmark(seed=seed, per_family=2, legit_per_customer=20)
 
 
+class IncidentRequest(BaseModel):
+    target_id: str = Field(default="C0001", max_length=16)
+    vector: Optional[str] = Field(default=None, max_length=64)
+    attack_type: Optional[str] = Field(default=None, max_length=64)
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
+    include_retraining: bool = True
+
+
+@app.post("/api/incident/report")
+async def _vercel_incident_report(body: IncidentRequest):
+    import incident_engine
+    return incident_engine.build_report(
+        target_id=body.target_id,
+        vector=body.vector,
+        attack_type=body.attack_type,
+        seed=body.seed,
+        include_retraining=body.include_retraining,
+    )
+
+
 @app.get("/api/runs/{run_id}")
 async def _vercel_run_detail(run_id: str):
     """Return a previously executed run so deep links stay honest.
@@ -383,119 +403,27 @@ async def _vercel_defender_status_stub():
 
 @app.post("/api/train")
 async def _vercel_train_handler(payload: Optional[dict] = None):
-    """Serverless calibrated training simulation supporting the full closed-loop pipeline."""
+    """Three-round adversarial retraining loop, computed per request.
+
+    This used to return a table of calibrated constants, so the Defend page
+    showed the same metrics on every deploy. It now runs the real loop from
+    defender_engine, which is pure stdlib and finishes well inside the
+    serverless budget.
+    """
+    import random as _random
+
+    import defender_engine
+
     payload = payload or {}
-    lab_records = payload.get("labRecords") or []
-    lab_run_id = payload.get("labRunId") or "LAB-DEFAULT"
+    seed = payload.get("seed")
+    if seed is None:
+        # Fresh draw per run; a pinned seed reproduces a specific result.
+        seed = _random.SystemRandom().randrange(2**31)
 
-    # Base calibrated performance metrics
-    precision_base = 0.912
-    recall_base = 0.184
-    f1_base = round(2 * (precision_base * recall_base) / (precision_base + recall_base), 4)
-    auc_base = 0.781
-
-    # Logistic Regression linear baseline
-    precision_log = 0.684
-    recall_log = 0.621
-    f1_log = round(2 * (precision_log * recall_log) / (precision_log + recall_log), 4)
-    auc_log = 0.742
-
-    # Augmented XGBoost (with synthetic feedback & lab batch)
-    bonus_recall = min(0.08, len(lab_records) * 0.02)
-    precision_aug = 0.884
-    recall_aug = min(0.92, round(0.724 + bonus_recall, 4))
-    f1_aug = round(2 * (precision_aug * recall_aug) / (precision_aug + recall_aug), 4)
-    auc_aug = 0.913
-
-    improvement = {
-        "precision": round(precision_aug - precision_base, 4),
-        "recall": round(recall_aug - recall_base, 4),
-        "f1": round(f1_aug - f1_base, 4),
-        "auc": round(auc_aug - auc_base, 4),
-    }
-
-    rounds = [
-        {
-            "round": 1,
-            "metrics": {"precision": 0.902, "recall": 0.388, "f1": 0.542, "auc": 0.821},
-            "featureImportance": {"amount": 0.29, "hour": 0.18, "is_new_payee": 0.21, "txn_velocity_1h": 0.15, "days_since_last_txn": 0.10, "is_international": 0.07},
-        },
-        {
-            "round": 2,
-            "metrics": {"precision": 0.891, "recall": 0.584, "f1": 0.705, "auc": 0.874},
-            "featureImportance": {"amount": 0.27, "hour": 0.20, "is_new_payee": 0.20, "txn_velocity_1h": 0.16, "days_since_last_txn": 0.10, "is_international": 0.07},
-        },
-        {
-            "round": 3,
-            "metrics": {"precision": precision_aug, "recall": recall_aug, "f1": f1_aug, "auc": auc_aug},
-            "featureImportance": {"amount": 0.25, "hour": 0.22, "is_new_payee": 0.19, "txn_velocity_1h": 0.17, "days_since_last_txn": 0.09, "is_international": 0.08},
-        },
-    ]
-
-    return {
-        "baseline": {
-            "label": "XGBoost Baseline (Real Data Only)",
-            "precision": precision_base,
-            "recall": recall_base,
-            "f1": f1_base,
-            "auc": auc_base,
-            "confusionMatrix": {"tn": 132, "fp": 12, "fn": 24, "tp": 6},
-            "trainSamples": 720,
-            "testSamples": 180,
-            "fraudRateTrain": 18.4,
-        },
-        "logisticBaseline": {
-            "label": "Logistic Regression Baseline",
-            "precision": precision_log,
-            "recall": recall_log,
-            "f1": f1_log,
-            "auc": auc_log,
-            "confusionMatrix": {"tn": 118, "fp": 26, "fn": 11, "tp": 19},
-            "trainSamples": 720,
-            "testSamples": 180,
-            "fraudRateTrain": 18.4,
-        },
-        "augmented": {
-            "label": "Augmented (Real + Synthetic + Lab)",
-            "precision": precision_aug,
-            "recall": recall_aug,
-            "f1": f1_aug,
-            "auc": auc_aug,
-            "confusionMatrix": {"tn": 130, "fp": 14, "fn": 8, "tp": 22},
-            "trainSamples": 800 + len(lab_records),
-            "testSamples": 180,
-            "fraudRateTrain": 24.2,
-        },
-        "modelComparison": {
-            "note": "Logistic Regression fits a linear decision boundary with balanced class weights, achieving reasonable recall at the cost of higher false positives on non-linear spending bursts. In contrast, Gradient-Boosted Decision Trees (XGBoost) capture higher-order feature interactions (off-hours velocity spikes to novel international payees), yielding superior precision and overall F1 score.",
-        },
-        "improvement": improvement,
-        "falseNegatives": {
-            "count": 8,
-            "pattern": {"avgAmount": 412.5, "avgHour": 6.4, "avgVelocity": 3.8, "pctNewPayee": 75.0, "pctInternational": 50.0},
-        },
-        "evasionAdvice": {
-            "text": "Evasive fraud clusters around lower transaction amounts ($300–$500), off-peak morning hours (05:00–07:00), and moderate velocity. Injecting these stealth parameters into Round 3 retraining yielded +54.0% recall improvement.",
-            "source": "FraudForge Adversarial Pipeline",
-        },
-        "rounds": rounds,
-        "featureImportanceByRound": [
-            {"round": r["round"], **r["featureImportance"]} for r in rounds
-        ],
-        "featureImportance": rounds[-1]["featureImportance"],
-        "flaggedTransactions": [
-            {"amount": 412.8, "hour": 3, "txn_velocity_1h": 5, "is_new_payee": 1, "is_international": 1, "actual_fraud": 1, "predicted_fraud_prob": 0.9412, "confidence": 0.8824, "confidence_level": "High"},
-            {"amount": 188.4, "hour": 6, "txn_velocity_1h": 4, "is_new_payee": 1, "is_international": 0, "actual_fraud": 1, "predicted_fraud_prob": 0.8710, "confidence": 0.7420, "confidence_level": "High"},
-            {"amount": 890.0, "hour": 14, "txn_velocity_1h": 3, "is_new_payee": 1, "is_international": 1, "actual_fraud": 1, "predicted_fraud_prob": 0.9125, "confidence": 0.8250, "confidence_level": "High"},
-            {"amount": 62.0, "hour": 11, "txn_velocity_1h": 1, "is_new_payee": 0, "is_international": 0, "actual_fraud": 0, "predicted_fraud_prob": 0.0814, "confidence": 0.8372, "confidence_level": "High"},
-        ],
-        "labRunId": lab_run_id,
-        "provenance": {
-            "source": "FraudForge Serverless Defender Engine",
-            "status": "ready",
-            "syntheticRecordsIngested": len(lab_records),
-        },
-    }
+    results = defender_engine.train(seed=int(seed))
+    results["provenance"]["engine"] = "defender_engine (serverless)"
+    results["labRunId"] = payload.get("labRunId")
+    return results
 
 
 @app.post("/api/benchmark")

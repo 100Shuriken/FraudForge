@@ -4,7 +4,6 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
     LineChart, Line, Legend,
 } from 'recharts'
-import { createDemoTraining } from '../data/demoData.js'
 import { useAttackContext } from '../context/AttackContext.jsx'
 import ExplainTerm from '../components/ExplainTerm.jsx'
 import BusinessImpactCalculator from '../components/BusinessImpactCalculator.jsx'
@@ -83,8 +82,15 @@ export default function Defend() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             setMetrics(data)
-        } catch {
-            setMetrics(createDemoTraining())
+        } catch (err) {
+            // Report the failure rather than substituting demo constants. The
+            // old fallback is why this page showed the same metrics forever.
+            setMetrics(null)
+            setError(
+                /failed to fetch|networkerror|load failed/i.test(err?.message || '')
+                    ? 'Cannot reach the FraudForge API. Start the backend with:  uvicorn main:app --reload --port 8000'
+                    : `Training run failed — ${err.message}`
+            )
         } finally {
             setLoading(false)
         }
@@ -194,8 +200,8 @@ export default function Defend() {
                                 {metrics.logisticBaseline && (
                                     <MetricsCard data={metrics.logisticBaseline} improvement={null} tag="Linear Baseline" theme="indigo" />
                                 )}
-                                <MetricsCard data={metrics.baseline} improvement={null} tag="Tree Baseline" theme="slate" />
-                                <MetricsCard data={metrics.augmented} improvement={metrics.improvement} tag="Augmented Champion" theme="defense" />
+                                <MetricsCard data={metrics.baseline} improvement={null} tag="Round 1 Baseline" theme="slate" />
+                                <MetricsCard data={metrics.augmented} improvement={metrics.improvement} tag="Round 3 Champion" theme="defense" />
                             </div>
 
                             {/* Before / After Slider */}
@@ -298,7 +304,7 @@ export default function Defend() {
                         </div>
 
                         <FlaggedTransactions
-                            transactions={filteredTransactions || (createDemoTraining().flaggedTransactions)}
+                            transactions={filteredTransactions || []}
                             explanations={explanations}
                             explainLoading={explainLoading}
                             onExplain={handleExplain}

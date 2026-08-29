@@ -751,14 +751,80 @@ main > div {
   animation: page-arrival 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Guided-tour highlight: a clear ring, not a pulsing halo. */
+/* ── Guided tour spotlight ────────────────────────────────────────────
+   A ring plus a soft surround, so the highlighted control is obvious
+   without the pulsing neon halo the old tour used. */
 .tour-spotlight-active {
   position: relative;
   z-index: 45;
-  border-color: var(--accent-amber);
-  outline: 2px solid var(--accent-amber);
-  outline-offset: 3px;
+  outline: 3px solid var(--accent-amber);
+  outline-offset: 4px;
   border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+  transition: outline-color 0.2s ease;
+}
+
+:root[data-theme="dark"] .tour-spotlight-active,
+:root:not([data-theme="light"]) .tour-spotlight-active {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Inline "explain buttons" markers ─────────────────────────────────
+   Rendered into a body-level layer and positioned over the real controls,
+   so an explanation sits beside the thing it describes rather than in a
+   modal at the top of the page. */
+.ff-explain-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.ff-explain-outline {
+  position: absolute;
+  border: 2px dashed var(--accent-indigo);
+  border-radius: 10px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.ff-explain-marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--accent-indigo);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--canvas);
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.ff-explain-marker:hover {
+  filter: brightness(1.12);
+}
+
+.ff-explain-popover {
+  position: absolute;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

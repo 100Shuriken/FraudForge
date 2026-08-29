@@ -125,6 +125,7 @@ export default function UnifiedLiveCockpit() {
                         type="button"
                         onClick={runSimulation}
                         disabled={busy || !customers.length}
+                        data-tour="run-sim-btn"
                         className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
                     >
                         {busy ? (
@@ -139,7 +140,7 @@ export default function UnifiedLiveCockpit() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-tour="vector-selector">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block">
                             1. AI threat vector
                         </label>
@@ -164,7 +165,7 @@ export default function UnifiedLiveCockpit() {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-tour="target-selector">
                         <label htmlFor="cockpit-target" className="text-[11px] font-bold uppercase tracking-wider text-text-secondary block">
                             2. Target account
                         </label>
@@ -204,7 +205,7 @@ export default function UnifiedLiveCockpit() {
             {sim && txn && verdict ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Red team */}
-                    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm space-y-4">
+                    <section data-tour="attack-panel" className="rounded-2xl border border-border bg-surface p-5 shadow-sm space-y-4">
                         <header className="flex items-center justify-between pb-3 border-b border-border">
                             <div>
                                 <h2 className="text-sm font-bold text-text-primary">Red team · synthesised attack</h2>
@@ -255,7 +256,7 @@ export default function UnifiedLiveCockpit() {
                     </section>
 
                     {/* Blue team */}
-                    <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm space-y-4">
+                    <section data-tour="verdict-panel" className="rounded-2xl border border-border bg-surface p-5 shadow-sm space-y-4">
                         <header className="flex items-center justify-between pb-3 border-b border-border">
                             <div>
                                 <h2 className="text-sm font-bold text-text-primary">Blue team · scorer verdict</h2>
@@ -347,7 +348,7 @@ export default function UnifiedLiveCockpit() {
             )}
 
             {/* ── Measured benchmark ────────────────────────────────── */}
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-4">
+            <section data-tour="benchmark-panel" className="rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h2 className="text-sm font-bold text-text-primary">Measured detector comparison</h2>
@@ -360,6 +361,7 @@ export default function UnifiedLiveCockpit() {
                         type="button"
                         onClick={runBenchmark}
                         disabled={benchmarkBusy}
+                        data-tour="run-benchmark-btn"
                         className="px-4 py-2.5 rounded-lg border border-border bg-surface-sunken hover:bg-surface-hover text-text-primary font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                     >
                         {benchmarkBusy ? 'Evaluating…' : benchmark ? 'Re-run benchmark' : 'Run benchmark'}

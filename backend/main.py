@@ -202,6 +202,27 @@ async def cockpit_benchmark(seed: int = 2026):
     return cockpit_engine.benchmark(seed=seed)
 
 
+class IncidentRequest(BaseModel):
+    target_id: str = Field(default="C0001", max_length=16)
+    vector: Optional[str] = Field(default=None, max_length=64)
+    attack_type: Optional[str] = Field(default=None, max_length=64)
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
+    include_retraining: bool = True
+
+
+@app.post("/api/incident/report")
+async def incident_report(body: IncidentRequest):
+    """Compose one end-to-end incident: profile, plan, payload, verdicts, retraining."""
+    import incident_engine  # noqa: PLC0415
+    return incident_engine.build_report(
+        target_id=body.target_id,
+        vector=body.vector,
+        attack_type=body.attack_type,
+        seed=body.seed,
+        include_retraining=body.include_retraining,
+    )
+
+
 @app.get("/api/runs/{run_id}")
 async def get_run_detail(run_id: str):
     """Return a previously executed run so deep links stay honest."""
@@ -246,6 +267,8 @@ class AIDefenseLabRequest(BaseModel):
 class TrainRequest(BaseModel):
     labRunId: Optional[str] = Field(default=None, max_length=64)
     labRecords: list[dict] = Field(default_factory=list, max_length=100)
+    # Omit for a fresh draw each run; supply one to reproduce a specific result.
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
 
 
 @app.post("/api/ai-defense-lab/run")
@@ -400,13 +423,31 @@ async def generate_custom(body: CustomScenarioRequest):
 
 @app.post("/api/train")
 async def train(body: TrainRequest = TrainRequest()):
-    """Train baseline vs augmented XGBoost classifiers, return comparative metrics."""
-    from trainer import train_both_models  # noqa: PLC0415
+    """Run the three-round adversarial retraining loop and report its metrics.
+
+    Prefers the XGBoost trainer when its dependencies and datasets are
+    present. When they are not — which is always the case on serverless —
+    it falls back to the dependency-free loop in `defender_engine` rather
+    than raising, because a 500 here used to send the UI to fixed demo
+    constants that never changed.
+    """
     try:
-        results = train_both_models(body.labRecords, body.labRunId)
+        from trainer import train_both_models  # noqa: PLC0415
+        return train_both_models(body.labRecords, body.labRunId)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return results
+    except Exception:  # noqa: BLE001 — missing deps, missing parquet, OOM, ...
+        import random as _random  # noqa: PLC0415
+
+        import defender_engine  # noqa: PLC0415
+
+        # A fixed default seed would make every training run return byte-identical
+        # numbers, which is the "static results" problem in a different costume.
+        # Draw fresh unless the caller pins one.
+        seed = body.seed if body.seed is not None else _random.SystemRandom().randrange(2**31)
+        results = defender_engine.train(seed=seed)
+        results["provenance"]["engine"] = "defender_engine (dependency-free fallback)"
+        return results
 
 
 @app.post("/api/benchmark")
