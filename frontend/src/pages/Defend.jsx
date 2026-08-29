@@ -374,11 +374,19 @@ function MetricsCard({ data, improvement, tag, theme = 'slate' }) {
             {improvement && (
                 <div className="pt-2 border-t border-border/40 text-xs font-bold text-emerald-400 flex items-center justify-between">
                     <span>Recall Recovery Lift:</span>
-                    <span className="font-mono text-sm">+{((improvement.recall_delta || 0.702) * 100).toFixed(1)}%</span>
+                    <span className="font-mono text-sm">{formatDelta(improvement.recall_delta)}</span>
                 </div>
             )}
         </div>
     )
+}
+
+/* A delta of exactly 0 is a real result — "no lift" — and must not be
+   redrawn as an invented +70.2%. Only a genuinely absent value shows a dash. */
+function formatDelta(value, digits = 1) {
+    if (value == null || Number.isNaN(Number(value))) return '—'
+    const pct = Number(value) * 100
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(digits)}%`
 }
 
 /* ── Improvement Bar ─────────────────────────────────────────── */
@@ -391,7 +399,7 @@ function ImprovementBar({ improvement }) {
                     ADVERSARIAL RECALL LIFT
                 </span>
                 <h3 className="text-xl font-extrabold text-white mt-2">
-                    +{((improvement.recall_delta || 0.702) * 100).toFixed(1)}% Defense Recovery
+                    {formatDelta(improvement.recall_delta)} Defense Recovery
                 </h3>
                 <p className="text-xs text-slate-300 mt-1">
                     Recovers missed synthetic evasions without inflating false positive friction on legitimate customers.
@@ -399,7 +407,7 @@ function ImprovementBar({ improvement }) {
             </div>
             <div className="text-right">
                 <span className="text-xs text-emerald-300 font-bold block">F1 Improvement</span>
-                <span className="text-3xl font-black font-mono text-emerald-400">+{((improvement.f1_delta || 0.49) * 100).toFixed(0)}%</span>
+                <span className="text-3xl font-black font-mono text-emerald-400">{formatDelta(improvement.f1_delta, 0)}</span>
             </div>
         </div>
     )

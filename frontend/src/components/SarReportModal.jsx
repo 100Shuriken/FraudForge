@@ -44,7 +44,7 @@ Velocity Deviation     : ${incidentData.payment?.txn_velocity_1h || 4} txns / hr
 PART III: MACHINE LEARNING & EXPLAINABLE AI EVIDENCE
 --------------------------------------------------------------------------------
 Classifier Verdict     : FRAUD_DETECTED (HIGH CONFIDENCE)
-Fraud Probability P(f) : ${((incidentData.verdict?.fraudProbability || 0.88) * 100).toFixed(1)}%
+Fraud Probability P(f) : ${((incidentData.verdict?.fraudProbability ?? 0) * 100).toFixed(1)}%
 Calibrated Confidence  : 94.2% (High Distance to Margin)
 SHAP Top Risk Driver   : Transaction Amount >3.5× baseline (+0.32 Risk)
 Secondary Driver       : Unverified New Beneficiary Entity (+0.22 Risk)

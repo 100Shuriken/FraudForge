@@ -17,6 +17,29 @@ export const NAVIGATION_STAGES = [
     { to: '/defend', label: 'Defender ML & ROI', short: 'Defender ML', icon: '🛡️', num: '04', color: 'amber' },
 ]
 
+const THEME_ORDER = ['system', 'light', 'dark']
+
+const THEME_META = {
+    system: { icon: '🖥️', label: 'System', title: 'Theme: following your system setting — click for light' },
+    light: { icon: '☀️', label: 'Light', title: 'Theme: light — click for dark' },
+    dark: { icon: '🌙', label: 'Dark', title: 'Theme: dark — click to follow your system' },
+}
+
+// Earlier builds stored 'hacker' / 'defense'; map them onto the new scheme so
+// a returning user does not land on an invalid theme.
+const LEGACY_THEMES = { hacker: 'dark', defense: 'light' }
+
+function readStoredTheme() {
+    try {
+        const stored = localStorage.getItem('fraudforge-theme')
+        if (!stored) return 'system'
+        if (THEME_ORDER.includes(stored)) return stored
+        return LEGACY_THEMES[stored] || 'system'
+    } catch {
+        return 'system'
+    }
+}
+
 const VECTOR_LABELS = {
     'voice-clone': 'Voice Cloning',
     'deepfake-video': 'Deepfake Video Calls',
@@ -42,7 +65,7 @@ export default function App() {
     } = useAttackContext()
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const [theme, setTheme] = useState(() => localStorage.getItem('fraudforge-theme') || 'hacker')
+    const [theme, setTheme] = useState(readStoredTheme)
     const location = useLocation()
 
     useEffect(() => {
@@ -50,13 +73,21 @@ export default function App() {
     }, [location.pathname])
 
     useEffect(() => {
-        document.body.className = theme === 'defense' ? 'theme-defense' : 'theme-hacker'
+        const root = document.documentElement
+        // No attribute means "follow the OS", which the stylesheet handles
+        // through prefers-color-scheme.
+        if (theme === 'system') root.removeAttribute('data-theme')
+        else root.setAttribute('data-theme', theme)
+        // The old build styled the body; make sure nothing lingers.
+        document.body.className = ''
         localStorage.setItem('fraudforge-theme', theme)
     }, [theme])
 
-    const toggleTheme = () => {
-        setTheme(prev => (prev === 'hacker' ? 'defense' : 'hacker'))
+    const cycleTheme = () => {
+        setTheme(prev => THEME_ORDER[(THEME_ORDER.indexOf(prev) + 1) % THEME_ORDER.length])
     }
+
+    const themeMeta = THEME_META[theme]
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row font-sans">
@@ -103,11 +134,12 @@ export default function App() {
 
                     {/* Mobile Theme Toggle */}
                     <button
-                        onClick={toggleTheme}
-                        className="px-2.5 py-1 rounded-lg border border-border bg-navy-950 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                        title="Toggle Hacker / Defense Mode"
+                        onClick={cycleTheme}
+                        className="px-2.5 py-1 rounded-lg border border-border bg-surface-sunken text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                        title={themeMeta.title}
+                        aria-label={themeMeta.title}
                     >
-                        {theme === 'hacker' ? '⚡ Hacker' : '🛡️ Defense'}
+                        <span aria-hidden="true">{themeMeta.icon}</span> {themeMeta.label}
                     </button>
 
                     <button
@@ -197,14 +229,16 @@ export default function App() {
 
                     {NAVIGATION_STAGES.map((stage) => {
                         const isVisited = visitedStages.has(stage.to)
+                        // A tinted panel and an accent label read as "selected"
+                        // without the neon bloom the old rail used.
                         const activeStyles = {
-                            emerald: 'border-emerald-500 bg-emerald-500/15 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/40 font-bold',
-                            indigo: 'border-indigo-400 bg-indigo-500/15 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)] ring-1 ring-indigo-400/40 font-bold',
-                            purple: 'border-purple-400 bg-purple-500/15 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.15)] ring-1 ring-purple-400/40 font-bold',
-                            rose: 'border-rose-500 bg-rose-500/15 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.15)] ring-1 ring-rose-500/40 font-bold',
-                            amber: 'border-amber-400 bg-amber-500/15 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)] ring-1 ring-amber-400/40 font-bold',
-                            sky: 'border-sky-400 bg-sky-500/15 text-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.15)] ring-1 ring-sky-400/40 font-bold',
-                            cyan: 'border-cyan-400 bg-cyan-500/15 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400/40 font-bold',
+                            emerald: 'border-emerald-400 bg-emerald-500/15 text-emerald-400 font-semibold',
+                            indigo: 'border-indigo-400 bg-indigo-500/15 text-indigo-400 font-semibold',
+                            purple: 'border-purple-400 bg-purple-500/15 text-purple-400 font-semibold',
+                            rose: 'border-rose-400 bg-rose-500/15 text-rose-400 font-semibold',
+                            amber: 'border-amber-400 bg-amber-500/15 text-amber-400 font-semibold',
+                            sky: 'border-sky-400 bg-sky-500/15 text-sky-400 font-semibold',
+                            cyan: 'border-cyan-400 bg-cyan-500/15 text-cyan-400 font-semibold',
                         }[stage.color]
 
                         return (
@@ -239,7 +273,7 @@ export default function App() {
                                                 {stage.num}
                                             </span>
                                             {isActive && (
-                                                <span className="w-2 h-2 rounded-full bg-signal-green animate-ping" />
+                                                <span className="w-1.5 h-1.5 rounded-full bg-current" />
                                             )}
                                         </div>
                                     </>
@@ -289,39 +323,42 @@ export default function App() {
 
                     <div className="flex items-center gap-3 shrink-0">
                         {/* View Mode: the one control that matters most, kept prominent */}
-                        <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-amber-500/40">
+                        <div className="flex items-center p-0.5 rounded-lg bg-surface-sunken border border-border" role="group" aria-label="View mode">
                             <button
                                 type="button"
                                 onClick={() => toggleUiMode('consumer')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                aria-pressed={uiMode === 'consumer'}
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                                     uiMode === 'consumer'
-                                        ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-surface text-text-primary shadow-sm'
+                                        : 'text-text-secondary hover:text-text-primary'
                                 }`}
                             >
-                                <span>👤 Consumer</span>
+                                Consumer
                             </button>
                             <button
                                 type="button"
                                 onClick={() => toggleUiMode('technical')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                aria-pressed={uiMode === 'technical'}
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                                     uiMode === 'technical'
-                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-surface text-text-primary shadow-sm'
+                                        : 'text-text-secondary hover:text-text-primary'
                                 }`}
                             >
-                                <span>🏆 Technical</span>
+                                Technical
                             </button>
                         </div>
 
                         {/* Theme — single control, lives only here */}
                         <button
                             type="button"
-                            onClick={toggleTheme}
-                            className="px-3 py-1.5 rounded-xl border border-border bg-navy-950 text-xs font-semibold flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white"
-                            title="Toggle Hacker / Defense theme"
+                            onClick={cycleTheme}
+                            className="px-3 py-1.5 rounded-lg border border-border bg-surface-sunken text-xs font-semibold flex items-center gap-1.5 cursor-pointer text-text-secondary hover:text-text-primary hover:bg-surface-hover transition-colors"
+                            title={themeMeta.title}
+                            aria-label={themeMeta.title}
                         >
-                            {theme === 'hacker' ? '⚡ Hacker' : '🛡️ Defense'}
+                            <span aria-hidden="true">{themeMeta.icon}</span> {themeMeta.label}
                         </button>
 
                         {uiMode === 'technical' && (

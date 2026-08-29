@@ -97,6 +97,125 @@ async def get_attacks():
 
 
 # ---------------------------------------------------------------------------
+# Routes — AI Defense Lab
+#
+# These mirror api/index.py exactly. Both delegate to lab_engine so a run
+# scored in local dev and the same run scored on Vercel agree.
+# ---------------------------------------------------------------------------
+
+class AttackRunRequest(BaseModel):
+    target_id: str = Field(default="C0001", max_length=16)
+    attack_type: Optional[str] = Field(default=None, max_length=64)
+    scenario_type: Optional[str] = Field(default=None, max_length=64)
+    difficulty: str = Field(default="medium", pattern=r"^(easy|medium|hard)$")
+    intensity: float = Field(default=0.6, ge=0.1, le=1.0)
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
+
+
+@app.get("/api/customers")
+async def list_customers():
+    import lab_engine  # noqa: PLC0415
+    return lab_engine.CUSTOMERS
+
+
+@app.get("/api/customers/{customer_id}")
+async def get_customer_detail(customer_id: str):
+    import lab_engine  # noqa: PLC0415
+    customer = lab_engine.get_customer(customer_id)
+    if customer["customer_id"] != customer_id:
+        raise HTTPException(status_code=404, detail=f"Unknown customer {customer_id}")
+    return {
+        "customer": customer,
+        "candidate_scores": lab_engine.score_candidates(customer),
+    }
+
+
+@app.get("/api/attack-families")
+async def list_attack_families():
+    import lab_engine  # noqa: PLC0415
+    return [
+        {"name": f["name"], "modality": f["modality"], "description": f["description"]}
+        for f in lab_engine.ATTACK_FAMILIES
+    ]
+
+
+@app.post("/api/attacks/run")
+async def run_attack_endpoint(body: AttackRunRequest):
+    """Plan, generate, and shadow-score one adversarial run."""
+    import lab_engine  # noqa: PLC0415
+    return lab_engine.run_attack(
+        target_id=body.target_id,
+        attack_type=body.attack_type,
+        scenario_type=body.scenario_type,
+        difficulty=body.difficulty,
+        intensity=body.intensity,
+        seed=body.seed,
+    )
+
+
+@app.post("/api/attacks/run-all")
+async def run_all_attacks_endpoint(body: AttackRunRequest):
+    import lab_engine  # noqa: PLC0415
+    return lab_engine.run_all_attacks(target_id=body.target_id, seed=body.seed)
+
+
+@app.post("/api/targets/{selector}")
+async def run_targeted_attack(selector: str, body: AttackRunRequest):
+    """Run against a named scenario type or a named attack family.
+
+    The Lab's scenario dropdown sends scenario types (TRANSACTION_ANOMALY),
+    while its per-family buttons send family names (velocity_anomaly), so
+    this accepts either rather than making the caller know the difference.
+    """
+    import lab_engine  # noqa: PLC0415
+    key = selector.strip()
+    if key in lab_engine.SCENARIO_FAMILIES:
+        return lab_engine.run_attack(
+            target_id=body.target_id, scenario_type=key,
+            difficulty=body.difficulty, intensity=body.intensity, seed=body.seed,
+        )
+    if key in lab_engine.ATTACK_BY_NAME:
+        return lab_engine.run_attack(
+            target_id=body.target_id, attack_type=key,
+            difficulty=body.difficulty, intensity=body.intensity, seed=body.seed,
+        )
+    raise HTTPException(status_code=404, detail=f"Unknown scenario or attack family '{selector}'")
+
+
+class CockpitRequest(BaseModel):
+    vector: str = Field(default="voice-clone", max_length=64)
+    target_id: str = Field(default="C0001", max_length=16)
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
+
+
+@app.post("/api/cockpit/simulate")
+async def cockpit_simulate(body: CockpitRequest):
+    """Generate one attack for this vector/target and score it two ways."""
+    import cockpit_engine  # noqa: PLC0415
+    return cockpit_engine.simulate(body.vector, body.target_id, body.seed)
+
+
+@app.get("/api/cockpit/benchmark")
+async def cockpit_benchmark(seed: int = 2026):
+    """Measured legacy-vs-hardened comparison over a labelled corpus."""
+    import cockpit_engine  # noqa: PLC0415
+    return cockpit_engine.benchmark(seed=seed)
+
+
+@app.get("/api/runs/{run_id}")
+async def get_run_detail(run_id: str):
+    """Return a previously executed run so deep links stay honest."""
+    import lab_engine  # noqa: PLC0415
+    run = lab_engine.get_run(run_id)
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Run {run_id} is not in this server's history. Runs are held in memory and do not survive a restart.",
+        )
+    return run
+
+
+# ---------------------------------------------------------------------------
 # Routes — Simulation Console (Screen 2)
 # ---------------------------------------------------------------------------
 

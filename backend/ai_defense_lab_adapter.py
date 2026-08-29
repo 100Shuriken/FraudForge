@@ -71,6 +71,7 @@ def _record(record: dict[str, Any], index: int) -> dict[str, Any]:
         "is_new_payee": int(attack_type in {"device_switch", "account_takeover"}),
         "txn_velocity_1h": max(1, int(round(float(payload.get("frequency_multiplier", 1))))) if attack_type == "velocity_anomaly" else 1,
         "is_international": int(attack_type == "account_takeover"),
+        "is_new_device": int(attack_type in {"device_switch", "account_takeover"}),
     }
     decision = score_transaction(features)
     return {
@@ -115,7 +116,9 @@ def run_lab(target_id: str, difficulty: str, intensity: float, seed: int = 2026,
     label, signal = ATTACK_LABELS.get(plan.attack_type, (plan.attack_type.replace("_", " ").title(), plan.attack_type))
     candidates = plan.parameters.get("candidate_scores", {})
     serialized_records = [_record(record, index) for index, record in enumerate(records, 1)]
-    flagged = sum(item["recommendedAction"] == "review" for item in serialized_records)
+    # The scorer is three-tier (allow / review / block); anything not allowed
+    # counts as caught.
+    flagged = sum(item["recommendedAction"] in ("review", "block") for item in serialized_records)
     run_id = hashlib.sha256(json.dumps({"target": target_id, "difficulty": difficulty, "intensity": intensity, "seed": seed}, sort_keys=True).encode()).hexdigest()[:12]
     return {
         "runId": f"LAB-{run_id.upper()}",

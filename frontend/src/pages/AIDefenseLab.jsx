@@ -12,6 +12,16 @@ const formatLabel = (value = '') => {
         .replace(/\b\w/g, l => l.toUpperCase())
 }
 
+// A run that cannot reach the API is reported, never invented. Fabricated
+// fallbacks are what made every result read the same 75% / 25%.
+const describeApiError = (err) => {
+    const message = err?.message || String(err)
+    if (/failed to fetch|networkerror|load failed/i.test(message)) {
+        return 'Cannot reach the FraudForge API. Start the backend with:  uvicorn main:app --reload --port 8000'
+    }
+    return `Attack run failed — ${message}`
+}
+
 const FALLBACK_CUSTOMERS = [
     { customer_id: 'C0001', city: 'Mumbai', usual_payment_method: 'UPI', usual_device_id: 'D0001', average_amount: 2028, daily_txns: 1, device_stability: 0.94, spending_regularity: 0.86, velocity_signal: 0.20 },
     { customer_id: 'C0002', city: 'Pune', usual_payment_method: 'CREDIT_CARD', usual_device_id: 'D0002', average_amount: 3223, daily_txns: 3, device_stability: 0.78, spending_regularity: 0.71, velocity_signal: 0.65 },
@@ -56,17 +66,25 @@ export default function AIDefenseLab() {
     const [busy, setBusy] = useState(false)
     const [scenarioType, setScenarioType] = useState('AUTO')
     const [showGuide, setShowGuide] = useState(true)
+    const [error, setError] = useState(null)
+    const [apiOnline, setApiOnline] = useState(null)
 
     const loadData = async () => {
         setBusy(true)
         try {
-            const custRes = await fetch('/api/customers').then(r => r.ok ? r.json() : null)
-            if (custRes && custRes.length > 0) {
+            const res = await fetch('/api/customers')
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const custRes = await res.json()
+            if (Array.isArray(custRes) && custRes.length > 0) {
                 setCustomers(custRes)
                 setSelectedCustomer(custRes[0])
+                setApiOnline(true)
+                setError(null)
             }
         } catch {
-            // fallback
+            // The roster is static reference data, so the built-in copy is a
+            // reasonable stand-in. Runs are not — those require the API.
+            setApiOnline(false)
         } finally {
             setBusy(false)
         }
@@ -109,6 +127,7 @@ export default function AIDefenseLab() {
         if (!selectedCustomer) return
         setBusy(true)
         setRunAll(null)
+        setError(null)
         try {
             const targetType = archetype || (scenarioType !== 'AUTO' ? scenarioType : undefined)
             let res
@@ -132,303 +151,12 @@ export default function AIDefenseLab() {
             setLatestLabRun(data)
             setSelectedRecordIndex(0)
             if (data.run_id) setSearchParams({ runId: data.run_id })
-        } catch {
-            const baseAmt = selectedCustomer.average_amount || 2000
-            const attackName = scenarioType === 'COMMUNICATION_SCAM' ? 'phishing'
-                : scenarioType === 'KYC_IDENTITY' ? 'synthetic_identity'
-                : scenarioType === 'LONGITUDINAL_BEHAVIOR' ? 'sleeper_transaction_pacing'
-                : scenarioType === 'CLASSIFIER_EVALUATION' ? 'adversarial_probing'
-                : scenarioType === 'TRANSACTION_ANOMALY' ? 'velocity_anomaly'
-                : (selectedCustomer.spending_regularity > 0.82 ? 'sleeper_transaction_pacing' : 'velocity_anomaly')
-
-            let dynamicRecords = []
-            let rationaleText = ''
-
-            if (attackName === 'sleeper_transaction_pacing') {
-                rationaleText = `Target ${selectedCustomer.customer_id} in ${selectedCustomer.city} has high baseline regularity (${selectedCustomer.spending_regularity}). Attacker uses sleeper pacing: starting with micro probes ($${Math.round(baseAmt * 0.25)}) and slowly escalating cadence over days to keep risk scores under the 0.50 threshold.`
-                dynamicRecords = [
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-01`,
-                        amount: Math.round(baseAmt * 0.22),
-                        hour: 10,
-                        signal: '1 txn/day (Warmup)',
-                        risk_score: 0.19,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.05 },
-                        explanation: 'Missed by Classifier (False Negative / Stealth): Low-dollar warmup probe mimicking standard daytime spend slipped far below 0.50 threshold.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-02`,
-                        amount: Math.round(baseAmt * 0.45),
-                        hour: 12,
-                        signal: '1 txn/day (Pacing)',
-                        risk_score: 0.28,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.12 },
-                        explanation: 'Missed by Classifier (False Negative / Stealth): Gradual amount increase under baseline threshold slipped undetected past heuristic velocity filters.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-03`,
-                        amount: Math.round(baseAmt * 0.75),
-                        hour: 14,
-                        signal: '2 txn/day (Pacing)',
-                        risk_score: 0.42,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 2, is_new_payee: 0, is_international: 0, time_drift: 0.18 },
-                        explanation: 'Missed by Classifier (False Negative / Evasion): Pacing vector tests model decision boundary at 0.42 probability. Extracted for Stage 05 retraining.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-04`,
-                        amount: Math.round(baseAmt * 1.55),
-                        hour: 16,
-                        signal: '3 txn/hr (Spike)',
-                        risk_score: 0.74,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 3, is_new_payee: 1, is_international: 0, time_drift: 0.35 },
-                        explanation: 'Step-Up Verification Triggered: Velocity escalated above regular baseline, triggering multi-factor authentication challenge.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-05`,
-                        amount: Math.round(baseAmt * 2.60),
-                        hour: 17,
-                        signal: '4 txn/hr (Payout Burst)',
-                        risk_score: 0.92,
-                        recommended_action: 'BLOCK',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 4, is_new_payee: 1, is_international: 1, time_drift: 0.52 },
-                        explanation: 'Flagged by ML Classifier (Blocked): Rapid cashout attempt combined with international payee triggered hard decline.',
-                    },
-                ]
-            } else if (attackName === 'adversarial_probing') {
-                rationaleText = `Adversarial boundary probing against target ${selectedCustomer.customer_id}. Systematically perturbs velocity and amount signals right around the 0.50 classifier decision boundary to identify blindspots.`
-                dynamicRecords = [
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-01`,
-                        amount: Math.round(baseAmt * 1.05),
-                        hour: 14,
-                        signal: '2 txn/hr (Boundary Test A)',
-                        risk_score: 0.54,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 2, is_new_payee: 1, is_international: 0, time_drift: 0.24 },
-                        explanation: 'Flagged (Step-Up): Barely crossed the 0.50 decision boundary due to unverified new payee.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-02`,
-                        amount: Math.round(baseAmt * 0.92),
-                        hour: 15,
-                        signal: '2 txn/hr (Perturbation B)',
-                        risk_score: 0.46,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 2, is_new_payee: 0, is_international: 0, time_drift: 0.16 },
-                        explanation: 'Missed by Classifier (False Negative / Boundary Evaded): Subtle feature damping lowered risk probability to 0.46, slipping under the 0.50 threshold.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-03`,
-                        amount: Math.round(baseAmt * 1.15),
-                        hour: 16,
-                        signal: '3 txn/hr (Boundary Test C)',
-                        risk_score: 0.53,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 3, is_new_payee: 1, is_international: 0, time_drift: 0.28 },
-                        explanation: 'Flagged (Step-Up): Velocity nudge pushed score to 0.53.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-04`,
-                        amount: Math.round(baseAmt * 0.88),
-                        hour: 17,
-                        signal: '1 txn/hr (Perturbation D)',
-                        risk_score: 0.41,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.10 },
-                        explanation: 'Missed by Classifier (False Negative / Evaded): Lower amount perturbation evaded detection threshold.',
-                    },
-                ]
-            } else if (attackName === 'synthetic_identity') {
-                rationaleText = `Synthetic Identity & KYC ATO targeting ${selectedCustomer.customer_id}. Injects synthetic credentials and evaluates biometric verification triggers.`
-                dynamicRecords = [
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-01`,
-                        amount: Math.round(baseAmt * 2.20),
-                        hour: 11,
-                        signal: 'Synthetic Device Token',
-                        risk_score: 0.95,
-                        recommended_action: 'BLOCK',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 3, is_new_payee: 1, is_international: 1, time_drift: 0.65 },
-                        explanation: 'Flagged by ML Classifier (Blocked): Synthetic credential mismatch and novel device ID flagged with high confidence.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-02`,
-                        amount: Math.round(baseAmt * 1.40),
-                        hour: 13,
-                        signal: 'KYC Account Probe',
-                        risk_score: 0.84,
-                        recommended_action: 'BLOCK',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 2, is_new_payee: 1, is_international: 0, time_drift: 0.42 },
-                        explanation: 'Flagged by ML Classifier: Uncharacteristic rapid payee enrollment deviates from customer historical profile.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-03`,
-                        amount: Math.round(baseAmt * 1.10),
-                        hour: 15,
-                        signal: 'Secondary Transfer',
-                        risk_score: 0.71,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 2, is_new_payee: 1, is_international: 0, time_drift: 0.30 },
-                        explanation: 'Step-Up Verification Triggered: Moderate risk score requires biometric challenge.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-04`,
-                        amount: Math.round(baseAmt * 0.35),
-                        hour: 16,
-                        signal: 'Micro-probe',
-                        risk_score: 0.29,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.08 },
-                        explanation: 'Missed by Classifier (False Negative): Sub-dollar synthetic account test slipped below threshold.',
-                    },
-                ]
-            } else if (attackName === 'phishing') {
-                rationaleText = `Hyper-personalized communication scam targeting ${selectedCustomer.customer_id} in ${selectedCustomer.city}. Crafts contextual urgency lure mimicking a verified local utility / vendor.`
-                dynamicRecords = [
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-01`,
-                        amount: Math.round(baseAmt * 1.70),
-                        hour: 14,
-                        signal: 'Urgent Lure Payout',
-                        risk_score: 0.88,
-                        recommended_action: 'BLOCK',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 3, is_new_payee: 1, is_international: 1, time_drift: 0.48 },
-                        explanation: 'Flagged by ML Classifier: Social engineering indicators coupled with anomalous payee account.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-02`,
-                        amount: Math.round(baseAmt * 1.10),
-                        hour: 15,
-                        signal: 'Split Payment Probe',
-                        risk_score: 0.72,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 2, is_new_payee: 1, is_international: 0, time_drift: 0.28 },
-                        explanation: 'Step-Up Required: Secondary split payment triggered biometric verification rule.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-03`,
-                        amount: Math.round(baseAmt * 0.95),
-                        hour: 16,
-                        signal: 'Follow-up Transfer',
-                        risk_score: 0.65,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 2, is_new_payee: 1, is_international: 0, time_drift: 0.22 },
-                        explanation: 'Step-Up Required: Consecutive new payee transfer required secondary confirmation.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-04`,
-                        amount: Math.round(baseAmt * 0.40),
-                        hour: 17,
-                        signal: 'Low-Dollar Mimic',
-                        risk_score: 0.26,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.06 },
-                        explanation: 'Missed by Classifier (False Negative): Sub-threshold phishing probe slipped under the 0.50 line.',
-                    },
-                ]
-            } else {
-                // Velocity Anomaly (Default)
-                rationaleText = `Target ${selectedCustomer.customer_id} in ${selectedCustomer.city} averages $${baseAmt} with ~${selectedCustomer.daily_txns || 1} daily transactions. The planner generated an evasive sequence modulating velocity between 1-5 txns/hr and payment amounts to test boundary sensitivity.`
-                dynamicRecords = [
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-01`,
-                        amount: Math.round(baseAmt * 1.85),
-                        hour: 14,
-                        signal: '5 txn/hr (Burst)',
-                        risk_score: 0.94,
-                        recommended_action: 'BLOCK',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 5, is_new_payee: 1, is_international: 1, time_drift: 0.55 },
-                        explanation: 'Flagged by ML Classifier: Extreme velocity burst (5 txn/hr vs baseline 1/day) combined with international payee.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-02`,
-                        amount: Math.round(baseAmt * 1.35),
-                        hour: 15,
-                        signal: '4 txn/hr',
-                        risk_score: 0.85,
-                        recommended_action: 'BLOCK',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 4, is_new_payee: 1, is_international: 0, time_drift: 0.38 },
-                        explanation: 'Flagged by ML Classifier: Sustained velocity spike and unverified domestic beneficiary.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-03`,
-                        amount: Math.round(baseAmt * 1.05),
-                        hour: 16,
-                        signal: '3 txn/hr',
-                        risk_score: 0.68,
-                        recommended_action: 'STEP_UP_AUTH',
-                        status: 'flagged',
-                        features: { txn_velocity_1h: 3, is_new_payee: 1, is_international: 0, time_drift: 0.25 },
-                        explanation: 'Step-Up Verification Triggered: Moderate velocity deviation and new payee account require secondary biometric auth.',
-                    },
-                    {
-                        id: `TXN-${Date.now().toString().slice(-4)}-04`,
-                        amount: Math.round(baseAmt * 0.42),
-                        hour: 17,
-                        signal: '1 txn/hr',
-                        risk_score: 0.22,
-                        recommended_action: 'ALLOW',
-                        status: 'allowed',
-                        features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.04 },
-                        explanation: 'Missed by Classifier (False Negative / Evaded): Stealth low-dollar probe mimicking normal domestic spending slipped below detection threshold. Extracted for Stage 05 Adapt training.',
-                    },
-                ]
-            }
-
-            const totalCount = dynamicRecords.length
-            const flaggedCount = dynamicRecords.filter(r => r.status === 'flagged' || r.risk_score >= 0.50).length
-            const falseNegatives = totalCount - flaggedCount
-
-            const fallbackRun = {
-                run_id: `LAB-${Date.now().toString().slice(-6)}`,
-                target: selectedCustomer,
-                plan: {
-                    target_id: selectedCustomer.customer_id,
-                    attack_type: attackName,
-                    primary_weakness: 'velocity_threshold_blindspot',
-                    rationale: rationaleText,
-                    modality: 'txn',
-                    intensity: 0.78,
-                },
-                generator_output: {
-                    status: 'success',
-                    modality: 'txn',
-                    records: dynamicRecords,
-                },
-                defense_output: {
-                    flagged: flaggedCount,
-                    total: totalCount,
-                    evasion_rate: totalCount > 0 ? parseFloat((falseNegatives / totalCount).toFixed(2)) : 0,
-                    detection_rate: totalCount > 0 ? parseFloat((flaggedCount / totalCount).toFixed(2)) : 0,
-                    false_negatives: falseNegatives,
-                },
-            }
-            setRun(fallbackRun)
-            setLatestLabRun(fallbackRun)
-            setSelectedRecordIndex(0)
+        } catch (err) {
+            // Report the failure instead of fabricating a run. The old
+            // hardcoded fallback is what made every result read 75% / 25%.
+            setRun(null)
+            setLatestLabRun(null)
+            setError(describeApiError(err))
         } finally {
             setBusy(false)
         }
@@ -437,6 +165,7 @@ export default function AIDefenseLab() {
     const executeAllAttacks = async () => {
         setBusy(true)
         setRun(null)
+        setError(null)
         try {
             const res = await fetch('/api/attacks/run-all', {
                 method: 'POST',
@@ -446,24 +175,9 @@ export default function AIDefenseLab() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
             setRunAll(data)
-        } catch {
-            const mockAll = {
-                results: [
-                    { attack_type: 'velocity_anomaly', modality: 'txn', records_generated: 4, detection_rate: 0.75, evasion_rate: 0.25 },
-                    { attack_type: 'behavioral_drift', modality: 'txn', records_generated: 4, detection_rate: 0.75, evasion_rate: 0.25 },
-                    { attack_type: 'device_switch', modality: 'dev', records_generated: 3, detection_rate: 0.67, evasion_rate: 0.33 },
-                    { attack_type: 'phishing', modality: 'com', records_generated: 4, detection_rate: 0.75, evasion_rate: 0.25 },
-                    { attack_type: 'vishing', modality: 'voi', records_generated: 3, detection_rate: 0.67, evasion_rate: 0.33 },
-                    { attack_type: 'video_deepfake', modality: 'vid', records_generated: 2, detection_rate: 1.00, evasion_rate: 0.00 },
-                    { attack_type: 'synthetic_identity', modality: 'idt', records_generated: 4, detection_rate: 0.75, evasion_rate: 0.25 },
-                    { attack_type: 'account_takeover', modality: 'crd', records_generated: 3, detection_rate: 0.67, evasion_rate: 0.33 },
-                    { attack_type: 'sleeper_transaction_pacing', modality: 'lng', records_generated: 5, detection_rate: 0.40, evasion_rate: 0.60 },
-                    { attack_type: 'adversarial_probing', modality: 'cls', records_generated: 4, detection_rate: 0.50, evasion_rate: 0.50 },
-                ],
-                total_attacks: 10,
-                successful: 10,
-            }
-            setRunAll(mockAll)
+        } catch (err) {
+            setRunAll(null)
+            setError(describeApiError(err))
         } finally {
             setBusy(false)
         }
@@ -475,119 +189,71 @@ export default function AIDefenseLab() {
         setSelectedCustomer(rand)
     }
 
+    // The API returns fully scored records, so trust them rather than
+    // re-deriving a verdict in the browser.
+    //
+    // Ground truth (`is_fraud`) is deliberately NOT part of `status`. Every
+    // generated record is fraud by construction, so folding it into the
+    // flag test — as this code used to — reports 100% detection no matter
+    // what the scorer actually decided.
     const parsedRecords = useMemo(() => {
         if (!run) return []
-        const raw = run.generator_output?.records || run.records || run.payload?.records || []
-        if (Array.isArray(raw) && raw.length > 0) {
-            const baseAmt = selectedCustomer?.average_amount || 2000
-            return raw.map((rec, i) => {
-                const payload = rec.payload || rec
-                let amt = rec.amount || payload.amount
-                if (!amt && Array.isArray(payload.amounts)) {
-                    amt = payload.amounts[i % payload.amounts.length] || payload.amounts[payload.amounts.length - 1]
-                }
-                if (!amt) amt = Math.round(baseAmt * (1.35 - i * 0.3))
+        const raw = run.generator_output?.records || run.records || []
+        if (!Array.isArray(raw)) return []
 
-                // Calculate dynamic realistic risk probability from features or raw score
-                let risk = rec.risk_score != null ? rec.risk_score : (rec.riskScore != null ? rec.riskScore : null)
-                if (risk == null) {
-                    const feat = rec.features || {}
-                    const vel = feat.txn_velocity_1h || (4 - i)
-                    const isNew = feat.is_new_payee ?? (i < 2 ? 1 : 0)
-                    const isIntl = feat.is_international ?? (i === 0 ? 1 : 0)
-                    risk = Math.min(0.96, Math.max(0.18, 0.20 + vel * 0.12 + isNew * 0.25 + isIntl * 0.22))
-                }
+        return raw.map((rec, i) => ({
+            id: rec.id || rec.attack_id || `TXN-${i + 1}`,
+            amount: Number(rec.amount) || 0,
+            hour: rec.hour ?? null,
+            signal: rec.signal || formatLabel(rec.attack_type) || '—',
+            risk_score: Number(rec.risk_score ?? 0),
+            recommended_action: rec.recommended_action || 'ALLOW',
+            status: rec.status === 'flagged' ? 'flagged' : 'allowed',
+            explanation: rec.explanation || '',
+            riskReasons: rec.risk_reasons || [],
+            contributions: rec.contributions || {},
+            confidenceLevel: rec.confidence_level || null,
+            features: rec.features || {},
+        }))
+    }, [run])
 
-                const isFlagged = rec.status === 'flagged' || rec.recommendedAction === 'review' || risk >= 0.50 || rec.is_fraud === true || rec.isFraud === true
-
-                return {
-                    id: rec.id || rec.attack_id || `TXN-${run.run_id?.slice(-4) || 'EV'}-0${i + 1}`,
-                    amount: Number(amt) || baseAmt,
-                    hour: rec.hour || payload.hour || (14 + i),
-                    signal: rec.signal || (payload.sequence_length ? `Step ${i + 1}/${payload.sequence_length}` : `${Math.max(1, 4 - i)} txn/hr`),
-                    risk_score: parseFloat(Number(risk).toFixed(2)),
-                    recommended_action: rec.recommended_action || rec.recommendedAction || (isFlagged ? (risk > 0.8 ? 'BLOCK' : 'STEP_UP_AUTH') : 'ALLOW'),
-                    status: isFlagged ? 'flagged' : 'allowed',
-                    explanation: rec.explanation || (isFlagged
-                        ? `Flagged by ML Classifier: Multi-signal anomaly exceeding behavioral baseline for ${selectedCustomer?.city || 'target account'}.`
-                        : `Missed by Classifier (False Negative): Stealth low-dollar probe mimicking normal spending slipped below 0.50 threshold.`),
-                    features: rec.features || {
-                        txn_velocity_1h: Math.max(1, 4 - i),
-                        is_new_payee: isFlagged ? 1 : 0,
-                        is_international: isFlagged && i === 0 ? 1 : 0,
-                        time_drift: 0.35,
-                    },
-                }
-            })
-        }
-
-        const baseAmt = selectedCustomer?.average_amount || 2000
-        return [
-            {
-                id: `TXN-${run.run_id?.slice(-4) || 'EV'}-01`,
-                amount: Math.round(baseAmt * 1.85),
-                hour: 14,
-                signal: '5 txn/hr',
-                risk_score: 0.94,
-                recommended_action: 'BLOCK',
-                status: 'flagged',
-                explanation: 'Flagged by ML Classifier: High transaction velocity combined with uncharacteristic international payee significantly deviates from historical profile.',
-                features: { txn_velocity_1h: 5, is_new_payee: 1, is_international: 1, time_drift: 0.45 },
-            },
-            {
-                id: `TXN-${run.run_id?.slice(-4) || 'EV'}-02`,
-                amount: Math.round(baseAmt * 1.35),
-                hour: 15,
-                signal: '4 txn/hr',
-                risk_score: 0.85,
-                recommended_action: 'BLOCK',
-                status: 'flagged',
-                explanation: 'Flagged by ML Classifier: Sustained velocity spike and unverified domestic beneficiary.',
-                features: { txn_velocity_1h: 4, is_new_payee: 1, is_international: 0, time_drift: 0.38 },
-            },
-            {
-                id: `TXN-${run.run_id?.slice(-4) || 'EV'}-03`,
-                amount: Math.round(baseAmt * 1.05),
-                hour: 16,
-                signal: '3 txn/hr',
-                risk_score: 0.68,
-                recommended_action: 'STEP_UP_AUTH',
-                status: 'flagged',
-                explanation: 'Step-Up Verification Triggered: Moderate velocity spike and domestic new payee account require secondary biometric confirmation.',
-                features: { txn_velocity_1h: 3, is_new_payee: 1, is_international: 0, time_drift: 0.28 },
-            },
-            {
-                id: `TXN-${run.run_id?.slice(-4) || 'EV'}-04`,
-                amount: Math.round(baseAmt * 0.42),
-                hour: 17,
-                signal: '1 txn/hr',
-                risk_score: 0.22,
-                recommended_action: 'ALLOW',
-                status: 'allowed',
-                explanation: 'Missed by Classifier (False Negative / Evaded): Stealth low-dollar probe mimicking normal domestic spending slipped below detection threshold. Extracted for Stage 05 Adapt training.',
-                features: { txn_velocity_1h: 1, is_new_payee: 0, is_international: 0, time_drift: 0.05 },
-            },
-        ]
-    }, [run, selectedCustomer])
-
-    // Dynamically calculate live detection & evasion rates from the actual records
+    // Prefer the server's own summary so the badges match the API response
+    // exactly. Recompute only when an older payload lacks one.
     const defenseMetrics = useMemo(() => {
-        if (!parsedRecords || parsedRecords.length === 0) {
-            return { flagged: 0, total: 0, allowed: 0, detectionRate: 0, evasionRate: 0 }
+        const server = run?.defense_output
+        if (server && typeof server.detection_rate === 'number') {
+            return {
+                flagged: server.flagged ?? 0,
+                total: server.total ?? 0,
+                allowed: server.false_negatives ?? 0,
+                detectionRate: server.detection_rate,
+                evasionRate: server.evasion_rate ?? 0,
+                meanRiskScore: server.mean_risk_score ?? null,
+                reviewThreshold: server.review_threshold ?? 0.5,
+            }
         }
+
         const total = parsedRecords.length
-        const flagged = parsedRecords.filter(r => r.status === 'flagged' || r.risk_score >= 0.50).length
-        const allowed = total - flagged
+        if (!total) {
+            return { flagged: 0, total: 0, allowed: 0, detectionRate: 0, evasionRate: 0, meanRiskScore: null, reviewThreshold: 0.5 }
+        }
+        const flagged = parsedRecords.filter(r => r.status === 'flagged').length
         return {
             flagged,
             total,
-            allowed,
-            detectionRate: total > 0 ? flagged / total : 0,
-            evasionRate: total > 0 ? allowed / total : 0,
+            allowed: total - flagged,
+            detectionRate: flagged / total,
+            evasionRate: (total - flagged) / total,
+            meanRiskScore: parsedRecords.reduce((sum, r) => sum + r.risk_score, 0) / total,
+            reviewThreshold: 0.5,
         }
-    }, [parsedRecords])
+    }, [run, parsedRecords])
 
     const activeRecord = parsedRecords[selectedRecordIndex] || parsedRecords[0]
+
+    // Round once and derive the complement, so the two badges always total
+    // 100% instead of rounding independently to 38% + 63%.
+    const detectionPct = Math.round(defenseMetrics.detectionRate * 100)
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 text-slate-100 font-sans">
@@ -604,6 +270,31 @@ export default function AIDefenseLab() {
                     { label: 'Evasion Extraction', value: 'Stage 05 Adapt' },
                 ]}
             />
+
+            {/* ── API status / error banner ──────────────────────────── */}
+            {(error || apiOnline === false) && (
+                <div
+                    role="alert"
+                    className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-start gap-3"
+                >
+                    <span className="text-lg leading-none mt-0.5" aria-hidden="true">⚠️</span>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-amber-200">
+                            {error ? 'Attack run could not complete' : 'FraudForge API not reachable'}
+                        </p>
+                        <p className="text-xs text-amber-100/80 mt-1 break-words">
+                            {error || 'Showing the built-in customer roster. Runs need the API — start it with: uvicorn main:app --reload --port 8000'}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => { setError(null); loadData() }}
+                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border border-amber-400/50 text-amber-100 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
 
             {/* ── Header ─────────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
@@ -866,13 +557,18 @@ export default function AIDefenseLab() {
                             {run && (
                                 <div data-tour="step4-metrics" className="flex items-center gap-2 flex-wrap">
                                     <span className="px-3 py-1 rounded-lg text-xs font-bold font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 shadow-sm flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                        Detection: {Math.round(defenseMetrics.detectionRate * 100)}% ({defenseMetrics.flagged}/{defenseMetrics.total})
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                        Detection: {detectionPct}% ({defenseMetrics.flagged}/{defenseMetrics.total})
                                     </span>
                                     <span className="px-3 py-1 rounded-lg text-xs font-bold font-mono bg-amber-950/80 text-amber-300 border border-amber-500/40 shadow-sm flex items-center gap-1.5">
                                         <span className="w-2 h-2 rounded-full bg-amber-400" />
-                                        Evasion: {Math.round(defenseMetrics.evasionRate * 100)}% ({defenseMetrics.allowed}/{defenseMetrics.total})
+                                        Evasion: {100 - detectionPct}% ({defenseMetrics.allowed}/{defenseMetrics.total})
                                     </span>
+                                    {defenseMetrics.meanRiskScore != null && (
+                                        <span className="px-3 py-1 rounded-lg text-xs font-bold font-mono bg-slate-900 text-slate-300 border border-border shadow-sm">
+                                            Mean risk: {defenseMetrics.meanRiskScore.toFixed(2)}
+                                        </span>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -942,7 +638,7 @@ export default function AIDefenseLab() {
                                                                 {rec.signal || `${i + 2} txn/hr`}
                                                             </td>
                                                             <td className="px-4 py-3 font-bold text-amber-300">
-                                                                {((rec.risk_score || 0.8) * 100).toFixed(0)}%
+                                                                {((rec.risk_score ?? 0) * 100).toFixed(0)}%
                                                             </td>
                                                             <td className="px-4 py-3 text-[11px] text-slate-300">
                                                                 {rec.recommended_action || (isFlagged ? 'BLOCK' : 'ALLOW')}
@@ -1007,7 +703,7 @@ export default function AIDefenseLab() {
                                             <div className="p-2.5 rounded-lg bg-black/60 border border-border">
                                                 <span className="text-[10px] uppercase text-slate-400 block">Model Confidence</span>
                                                 <span className="text-sm font-bold text-amber-300 mt-0.5 block">
-                                                    {((activeRecord.risk_score || 0.85) * 100).toFixed(1)}%
+                                                    {((activeRecord.risk_score ?? 0) * 100).toFixed(1)}%
                                                 </span>
                                                 <span className="text-[10px] text-slate-400 block">
                                                     Threshold: 50.0%
@@ -1095,10 +791,12 @@ export default function AIDefenseLab() {
                                     <div key={i} className="p-3 rounded-xl border border-border/60 bg-navy-950 flex items-center justify-between text-xs font-mono">
                                         <div>
                                             <p className="font-bold text-white uppercase text-[11px]">{formatLabel(res.attack_type)}</p>
-                                            <p className="text-[10px] text-slate-400 mt-0.5">Modality: {res.modality} · {res.records_generated || 2} txns</p>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">Modality: {res.modality} · {res.records_generated ?? 0} txns</p>
                                         </div>
+                                        {/* `??`, not `||` — a fully evaded family reports 0, and `||`
+                                            would silently redraw that as a made-up 70%. */}
                                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
-                                            Det: {Math.round((res.detection_rate || 0.7) * 100)}%
+                                            Det: {Math.round((res.detection_rate ?? 0) * 100)}%
                                         </span>
                                     </div>
                                 ))}

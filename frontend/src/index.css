@@ -1,486 +1,771 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ---- Base Fonts & Layout ---- */
+/* ==========================================================================
+   FraudForge theme system
+
+   One set of semantic tokens, defined twice — once for light, once for dark.
+   Everything else in the app reads those tokens, so a theme change is a
+   variable swap rather than a pile of per-component overrides.
+
+   Theme resolution (see App.jsx):
+     <html data-theme="light">  explicit light
+     <html data-theme="dark">   explicit dark
+     no attribute              follow the operating system
+   ========================================================================== */
+
+/* ---- Light (also the no-preference default) ---------------------------- */
+:root {
+  --canvas: #f6f7f9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f0f2f5;
+  --surface-hover: #eceff3;
+
+  --border-color: #e3e6eb;
+  --border-strong: #cdd2da;
+
+  --text-primary: #16191f;
+  --text-secondary: #4d5563;
+  --text-muted: #737b88;
+
+  --accent-green: #047857;
+  --accent-amber: #b45309;
+  --accent-red: #be123c;
+  --accent-cyan: #0e7490;
+  --accent-indigo: #4338ca;
+  --accent-purple: #7e22ce;
+
+  --tint-green: #ecfdf5;
+  --tint-amber: #fffbeb;
+  --tint-red: #fff1f2;
+  --tint-cyan: #ecfeff;
+  --tint-indigo: #eef2ff;
+  --tint-purple: #faf5ff;
+
+  --tint-green-border: #a7f3d0;
+  --tint-amber-border: #fde68a;
+  --tint-red-border: #fecdd3;
+  --tint-cyan-border: #a5f3fc;
+  --tint-indigo-border: #c7d2fe;
+  --tint-purple-border: #e9d5ff;
+
+  --shadow-sm: 0 1px 2px rgba(16, 20, 28, 0.05);
+  --shadow-md: 0 2px 8px rgba(16, 20, 28, 0.07);
+  --shadow-lg: 0 8px 24px rgba(16, 20, 28, 0.09);
+
+  --scrollbar-thumb: #c9cfd8;
+  --scrollbar-thumb-hover: #a8b1bd;
+
+  color-scheme: light;
+}
+
+/* ---- Dark, when the OS asks for it and no explicit choice was made ------ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #0f1115;
+    --surface: #171a21;
+    --surface-raised: #1c2029;
+    --surface-sunken: #12151b;
+    --surface-hover: #222732;
+
+    --border-color: #272c36;
+    --border-strong: #39404d;
+
+    --text-primary: #e8eaee;
+    --text-secondary: #a6aebc;
+    --text-muted: #79818f;
+
+    --accent-green: #34d399;
+    --accent-amber: #fbbf24;
+    --accent-red: #fb7185;
+    --accent-cyan: #22d3ee;
+    --accent-indigo: #818cf8;
+    --accent-purple: #c084fc;
+
+    --tint-green: rgba(52, 211, 153, 0.10);
+    --tint-amber: rgba(251, 191, 36, 0.10);
+    --tint-red: rgba(251, 113, 133, 0.10);
+    --tint-cyan: rgba(34, 211, 238, 0.10);
+    --tint-indigo: rgba(129, 140, 248, 0.10);
+    --tint-purple: rgba(192, 132, 252, 0.10);
+
+    --tint-green-border: rgba(52, 211, 153, 0.28);
+    --tint-amber-border: rgba(251, 191, 36, 0.28);
+    --tint-red-border: rgba(251, 113, 133, 0.28);
+    --tint-cyan-border: rgba(34, 211, 238, 0.28);
+    --tint-indigo-border: rgba(129, 140, 248, 0.28);
+    --tint-purple-border: rgba(192, 132, 252, 0.28);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.34);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.42);
+
+    --scrollbar-thumb: #333a46;
+    --scrollbar-thumb-hover: #454e5d;
+
+    color-scheme: dark;
+  }
+}
+
+/* ---- Dark, chosen explicitly ------------------------------------------- */
+:root[data-theme="dark"] {
+  --canvas: #0f1115;
+  --surface: #171a21;
+  --surface-raised: #1c2029;
+  --surface-sunken: #12151b;
+  --surface-hover: #222732;
+
+  --border-color: #272c36;
+  --border-strong: #39404d;
+
+  --text-primary: #e8eaee;
+  --text-secondary: #a6aebc;
+  --text-muted: #79818f;
+
+  --accent-green: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-red: #fb7185;
+  --accent-cyan: #22d3ee;
+  --accent-indigo: #818cf8;
+  --accent-purple: #c084fc;
+
+  --tint-green: rgba(52, 211, 153, 0.10);
+  --tint-amber: rgba(251, 191, 36, 0.10);
+  --tint-red: rgba(251, 113, 133, 0.10);
+  --tint-cyan: rgba(34, 211, 238, 0.10);
+  --tint-indigo: rgba(129, 140, 248, 0.10);
+  --tint-purple: rgba(192, 132, 252, 0.10);
+
+  --tint-green-border: rgba(52, 211, 153, 0.28);
+  --tint-amber-border: rgba(251, 191, 36, 0.28);
+  --tint-red-border: rgba(251, 113, 133, 0.28);
+  --tint-cyan-border: rgba(34, 211, 238, 0.28);
+  --tint-indigo-border: rgba(129, 140, 248, 0.28);
+  --tint-purple-border: rgba(192, 132, 252, 0.28);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.34);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.42);
+
+  --scrollbar-thumb: #333a46;
+  --scrollbar-thumb-hover: #454e5d;
+
+  color-scheme: dark;
+}
+
+/* ---- Expose the tokens to Tailwind utilities --------------------------- */
 @theme {
-  --font-sans: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  --font-mono: 'DM Mono', monospace;
+  --font-sans: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
-  --color-navy-950: var(--navy-950);
-  --color-navy-900: var(--navy-900);
-  --color-navy-800: var(--navy-800);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+
+  /* Legacy names kept so existing markup keeps working; they now resolve to
+     theme-aware surfaces instead of hardcoded navy. */
+  --color-navy-950: var(--surface-sunken);
+  --color-navy-900: var(--surface-sunken);
+  --color-navy-800: var(--surface-raised);
+
   --color-border: var(--border-color);
+  --color-border-strong: var(--border-strong);
+
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+
+  --color-signal-green: var(--accent-green);
+  --color-signal-amber: var(--accent-amber);
+  --color-signal-red: var(--accent-red);
+  --color-signal-cyan: var(--accent-cyan);
+  --color-accent-red: var(--accent-red);
 }
 
-:root {
-  --signal-green: #10b981;
-  --signal-gold: #facc15;
-  --signal-amber: #f97316;
-  --signal-red: #ef4444;
-  --signal-crimson: #e11d48;
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+html {
+  background-color: var(--canvas);
 }
 
 html, body {
   margin: 0;
   min-width: 320px;
   font-family: var(--font-sans);
-  transition: background-color 0.25s ease, color 0.25s ease;
+  background-color: var(--canvas);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+}
+
+::selection {
+  background: var(--tint-cyan);
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
 }
 
 /* ==========================================================================
-   THEME 1: OBSIDIAN MATRIX (Deep Black with Gold, Orange, Green & Red Neon)
-   ========================================================================== */
-body.theme-hacker {
-  --surface: #141419;
-  --surface-hover: #1c1c24;
-  --navy-950: #0a0a0e;
-  --navy-900: #101015;
-  --navy-800: #181820;
-  --border-color: #272732;
-  --text-primary: #ffffff;
-  --text-secondary: #e4e4e7;
-  --text-muted: #a1a1aa;
+   Compatibility layer
 
-  background-color: #08080a;
+   Much of the app was written against fixed dark-mode Tailwind classes
+   (text-white, text-slate-400, bg-emerald-950/30, ...). Rather than rewrite
+   every component, remap those utilities onto the semantic tokens so they
+   adapt to the active theme.
+
+   The `:root` prefix raises specificity above the plain utility class, which
+   is why none of this needs !important.
+   ========================================================================== */
+
+/* ---- Neutral text ---- */
+:root [class^="text-white"], :root [class*=" text-white"],
+:root [class^="text-slate-50"], :root [class*=" text-slate-50"],
+:root [class^="text-slate-100"], :root [class*=" text-slate-100"],
+:root [class^="text-slate-200"], :root [class*=" text-slate-200"],
+:root [class^="text-slate-300"], :root [class*=" text-slate-300"],
+:root [class^="text-gray-100"], :root [class*=" text-gray-100"],
+:root [class^="text-gray-200"], :root [class*=" text-gray-200"],
+:root [class^="text-gray-300"], :root [class*=" text-gray-300"],
+:root [class^="text-zinc-100"], :root [class*=" text-zinc-100"],
+:root [class^="text-zinc-200"], :root [class*=" text-zinc-200"],
+:root [class^="text-zinc-300"], :root [class*=" text-zinc-300"] {
+  color: var(--text-primary);
+}
+
+:root [class^="text-slate-400"], :root [class*=" text-slate-400"],
+:root [class^="text-gray-400"], :root [class*=" text-gray-400"],
+:root [class^="text-zinc-400"], :root [class*=" text-zinc-400"] {
+  color: var(--text-secondary);
+}
+
+:root [class^="text-slate-500"], :root [class*=" text-slate-500"],
+:root [class^="text-slate-600"], :root [class*=" text-slate-600"],
+:root [class^="text-gray-500"], :root [class*=" text-gray-500"],
+:root [class^="text-gray-600"], :root [class*=" text-gray-600"],
+:root [class^="text-zinc-500"], :root [class*=" text-zinc-500"],
+:root [class^="text-zinc-600"], :root [class*=" text-zinc-600"] {
+  color: var(--text-muted);
+}
+
+
+/* ---- Accent text ---- */
+:root [class^="text-emerald-50"], :root [class*=" text-emerald-50"],
+:root [class^="text-emerald-100"], :root [class*=" text-emerald-100"],
+:root [class^="text-emerald-200"], :root [class*=" text-emerald-200"],
+:root [class^="text-emerald-300"], :root [class*=" text-emerald-300"],
+:root [class^="text-emerald-400"], :root [class*=" text-emerald-400"],
+:root [class^="text-emerald-500"], :root [class*=" text-emerald-500"],
+:root [class^="text-green-50"], :root [class*=" text-green-50"],
+:root [class^="text-green-100"], :root [class*=" text-green-100"],
+:root [class^="text-green-200"], :root [class*=" text-green-200"],
+:root [class^="text-green-300"], :root [class*=" text-green-300"],
+:root [class^="text-green-400"], :root [class*=" text-green-400"],
+:root [class^="text-green-500"], :root [class*=" text-green-500"],
+:root [class^="text-teal-50"], :root [class*=" text-teal-50"],
+:root [class^="text-teal-100"], :root [class*=" text-teal-100"],
+:root [class^="text-teal-200"], :root [class*=" text-teal-200"],
+:root [class^="text-teal-300"], :root [class*=" text-teal-300"],
+:root [class^="text-teal-400"], :root [class*=" text-teal-400"],
+:root [class^="text-teal-500"], :root [class*=" text-teal-500"] {
+  color: var(--accent-green);
+}
+
+:root [class^="text-amber-50"], :root [class*=" text-amber-50"],
+:root [class^="text-amber-100"], :root [class*=" text-amber-100"],
+:root [class^="text-amber-200"], :root [class*=" text-amber-200"],
+:root [class^="text-amber-300"], :root [class*=" text-amber-300"],
+:root [class^="text-amber-400"], :root [class*=" text-amber-400"],
+:root [class^="text-amber-500"], :root [class*=" text-amber-500"],
+:root [class^="text-yellow-50"], :root [class*=" text-yellow-50"],
+:root [class^="text-yellow-100"], :root [class*=" text-yellow-100"],
+:root [class^="text-yellow-200"], :root [class*=" text-yellow-200"],
+:root [class^="text-yellow-300"], :root [class*=" text-yellow-300"],
+:root [class^="text-yellow-400"], :root [class*=" text-yellow-400"],
+:root [class^="text-yellow-500"], :root [class*=" text-yellow-500"],
+:root [class^="text-orange-50"], :root [class*=" text-orange-50"],
+:root [class^="text-orange-100"], :root [class*=" text-orange-100"],
+:root [class^="text-orange-200"], :root [class*=" text-orange-200"],
+:root [class^="text-orange-300"], :root [class*=" text-orange-300"],
+:root [class^="text-orange-400"], :root [class*=" text-orange-400"],
+:root [class^="text-orange-500"], :root [class*=" text-orange-500"] {
+  color: var(--accent-amber);
+}
+
+:root [class^="text-rose-50"], :root [class*=" text-rose-50"],
+:root [class^="text-rose-100"], :root [class*=" text-rose-100"],
+:root [class^="text-rose-200"], :root [class*=" text-rose-200"],
+:root [class^="text-rose-300"], :root [class*=" text-rose-300"],
+:root [class^="text-rose-400"], :root [class*=" text-rose-400"],
+:root [class^="text-rose-500"], :root [class*=" text-rose-500"],
+:root [class^="text-red-50"], :root [class*=" text-red-50"],
+:root [class^="text-red-100"], :root [class*=" text-red-100"],
+:root [class^="text-red-200"], :root [class*=" text-red-200"],
+:root [class^="text-red-300"], :root [class*=" text-red-300"],
+:root [class^="text-red-400"], :root [class*=" text-red-400"],
+:root [class^="text-red-500"], :root [class*=" text-red-500"] {
+  color: var(--accent-red);
+}
+
+:root [class^="text-cyan-50"], :root [class*=" text-cyan-50"],
+:root [class^="text-cyan-100"], :root [class*=" text-cyan-100"],
+:root [class^="text-cyan-200"], :root [class*=" text-cyan-200"],
+:root [class^="text-cyan-300"], :root [class*=" text-cyan-300"],
+:root [class^="text-cyan-400"], :root [class*=" text-cyan-400"],
+:root [class^="text-cyan-500"], :root [class*=" text-cyan-500"],
+:root [class^="text-sky-50"], :root [class*=" text-sky-50"],
+:root [class^="text-sky-100"], :root [class*=" text-sky-100"],
+:root [class^="text-sky-200"], :root [class*=" text-sky-200"],
+:root [class^="text-sky-300"], :root [class*=" text-sky-300"],
+:root [class^="text-sky-400"], :root [class*=" text-sky-400"],
+:root [class^="text-sky-500"], :root [class*=" text-sky-500"] {
+  color: var(--accent-cyan);
+}
+
+:root [class^="text-indigo-50"], :root [class*=" text-indigo-50"],
+:root [class^="text-indigo-100"], :root [class*=" text-indigo-100"],
+:root [class^="text-indigo-200"], :root [class*=" text-indigo-200"],
+:root [class^="text-indigo-300"], :root [class*=" text-indigo-300"],
+:root [class^="text-indigo-400"], :root [class*=" text-indigo-400"],
+:root [class^="text-indigo-500"], :root [class*=" text-indigo-500"],
+:root [class^="text-blue-50"], :root [class*=" text-blue-50"],
+:root [class^="text-blue-100"], :root [class*=" text-blue-100"],
+:root [class^="text-blue-200"], :root [class*=" text-blue-200"],
+:root [class^="text-blue-300"], :root [class*=" text-blue-300"],
+:root [class^="text-blue-400"], :root [class*=" text-blue-400"],
+:root [class^="text-blue-500"], :root [class*=" text-blue-500"] {
+  color: var(--accent-indigo);
+}
+
+:root [class^="text-purple-50"], :root [class*=" text-purple-50"],
+:root [class^="text-purple-100"], :root [class*=" text-purple-100"],
+:root [class^="text-purple-200"], :root [class*=" text-purple-200"],
+:root [class^="text-purple-300"], :root [class*=" text-purple-300"],
+:root [class^="text-purple-400"], :root [class*=" text-purple-400"],
+:root [class^="text-purple-500"], :root [class*=" text-purple-500"],
+:root [class^="text-violet-50"], :root [class*=" text-violet-50"],
+:root [class^="text-violet-100"], :root [class*=" text-violet-100"],
+:root [class^="text-violet-200"], :root [class*=" text-violet-200"],
+:root [class^="text-violet-300"], :root [class*=" text-violet-300"],
+:root [class^="text-violet-400"], :root [class*=" text-violet-400"],
+:root [class^="text-violet-500"], :root [class*=" text-violet-500"],
+:root [class^="text-fuchsia-50"], :root [class*=" text-fuchsia-50"],
+:root [class^="text-fuchsia-100"], :root [class*=" text-fuchsia-100"],
+:root [class^="text-fuchsia-200"], :root [class*=" text-fuchsia-200"],
+:root [class^="text-fuchsia-300"], :root [class*=" text-fuchsia-300"],
+:root [class^="text-fuchsia-400"], :root [class*=" text-fuchsia-400"],
+:root [class^="text-fuchsia-500"], :root [class*=" text-fuchsia-500"] {
+  color: var(--accent-purple);
+}
+
+
+/* ---- Tinted panels ----
+   Only the 900/950 shades are remapped. Those are opaque near-black panels
+   that would stay black on a light page. The 400-600 shades are left alone:
+   `bg-emerald-600` is a solid button that should stay solid, and
+   `bg-emerald-500/10` is already translucent and reads correctly over either
+   background. */
+
+:root [class^="bg-emerald-900"], :root [class*=" bg-emerald-900"],
+:root [class^="bg-emerald-950"], :root [class*=" bg-emerald-950"],
+:root [class^="bg-green-900"], :root [class*=" bg-green-900"],
+:root [class^="bg-green-950"], :root [class*=" bg-green-950"],
+:root [class^="bg-teal-900"], :root [class*=" bg-teal-900"],
+:root [class^="bg-teal-950"], :root [class*=" bg-teal-950"] {
+  background-color: var(--tint-green);
+}
+
+:root [class^="bg-amber-900"], :root [class*=" bg-amber-900"],
+:root [class^="bg-amber-950"], :root [class*=" bg-amber-950"],
+:root [class^="bg-yellow-900"], :root [class*=" bg-yellow-900"],
+:root [class^="bg-yellow-950"], :root [class*=" bg-yellow-950"],
+:root [class^="bg-orange-900"], :root [class*=" bg-orange-900"],
+:root [class^="bg-orange-950"], :root [class*=" bg-orange-950"] {
+  background-color: var(--tint-amber);
+}
+
+:root [class^="bg-rose-900"], :root [class*=" bg-rose-900"],
+:root [class^="bg-rose-950"], :root [class*=" bg-rose-950"],
+:root [class^="bg-red-900"], :root [class*=" bg-red-900"],
+:root [class^="bg-red-950"], :root [class*=" bg-red-950"] {
+  background-color: var(--tint-red);
+}
+
+:root [class^="bg-cyan-900"], :root [class*=" bg-cyan-900"],
+:root [class^="bg-cyan-950"], :root [class*=" bg-cyan-950"],
+:root [class^="bg-sky-900"], :root [class*=" bg-sky-900"],
+:root [class^="bg-sky-950"], :root [class*=" bg-sky-950"] {
+  background-color: var(--tint-cyan);
+}
+
+:root [class^="bg-indigo-900"], :root [class*=" bg-indigo-900"],
+:root [class^="bg-indigo-950"], :root [class*=" bg-indigo-950"],
+:root [class^="bg-blue-900"], :root [class*=" bg-blue-900"],
+:root [class^="bg-blue-950"], :root [class*=" bg-blue-950"] {
+  background-color: var(--tint-indigo);
+}
+
+:root [class^="bg-purple-900"], :root [class*=" bg-purple-900"],
+:root [class^="bg-purple-950"], :root [class*=" bg-purple-950"],
+:root [class^="bg-violet-900"], :root [class*=" bg-violet-900"],
+:root [class^="bg-violet-950"], :root [class*=" bg-violet-950"],
+:root [class^="bg-fuchsia-900"], :root [class*=" bg-fuchsia-900"],
+:root [class^="bg-fuchsia-950"], :root [class*=" bg-fuchsia-950"] {
+  background-color: var(--tint-purple);
+}
+
+/* ---- Tinted borders ---- */
+:root [class^="border-emerald-"], :root [class*=" border-emerald-"],
+:root [class^="border-green-"], :root [class*=" border-green-"],
+:root [class^="border-teal-"], :root [class*=" border-teal-"] {
+  border-color: var(--tint-green-border);
+}
+
+:root [class^="border-amber-"], :root [class*=" border-amber-"],
+:root [class^="border-yellow-"], :root [class*=" border-yellow-"],
+:root [class^="border-orange-"], :root [class*=" border-orange-"] {
+  border-color: var(--tint-amber-border);
+}
+
+:root [class^="border-rose-"], :root [class*=" border-rose-"],
+:root [class^="border-red-"], :root [class*=" border-red-"] {
+  border-color: var(--tint-red-border);
+}
+
+:root [class^="border-cyan-"], :root [class*=" border-cyan-"],
+:root [class^="border-sky-"], :root [class*=" border-sky-"] {
+  border-color: var(--tint-cyan-border);
+}
+
+:root [class^="border-indigo-"], :root [class*=" border-indigo-"],
+:root [class^="border-blue-"], :root [class*=" border-blue-"] {
+  border-color: var(--tint-indigo-border);
+}
+
+:root [class^="border-purple-"], :root [class*=" border-purple-"],
+:root [class^="border-violet-"], :root [class*=" border-violet-"],
+:root [class^="border-fuchsia-"], :root [class*=" border-fuchsia-"] {
+  border-color: var(--tint-purple-border);
+}
+
+
+/* ---- Neutral surfaces ---- */
+:root [class^="bg-slate-900"], :root [class*=" bg-slate-900"],
+:root [class^="bg-slate-950"], :root [class*=" bg-slate-950"],
+:root [class^="bg-zinc-900"], :root [class*=" bg-zinc-900"],
+:root [class^="bg-zinc-950"], :root [class*=" bg-zinc-950"],
+:root [class^="bg-navy-9"], :root [class*=" bg-navy-9"],
+:root [class^="bg-black/"], :root [class*=" bg-black/"],
+:root [class^="bg-black\/"], :root [class*=" bg-black\/"] {
+  background-color: var(--surface-sunken);
+}
+
+:root [class^="bg-slate-800"], :root [class*=" bg-slate-800"],
+:root [class^="bg-zinc-800"], :root [class*=" bg-zinc-800"],
+:root [class^="bg-slate-700"], :root [class*=" bg-slate-700"] {
+  background-color: var(--surface-raised);
+}
+
+:root [class^="border-slate-"], :root [class*=" border-slate-"],
+:root [class^="border-zinc-"], :root [class*=" border-zinc-"],
+:root [class^="border-gray-"], :root [class*=" border-gray-"] {
+  border-color: var(--border-color);
+}
+
+
+/* ---- Neutralize neon glows ---- */
+:root [class^="shadow-[0_0_"], :root [class*=" shadow-[0_0_"] {
+  box-shadow: var(--shadow-sm);
+}
+
+
+/* ---- Hardcoded hex panels ---- */
+:root .bg-\[\#060a12\],
+:root .bg-\[\#050e11\] {
+  background-color: var(--surface-sunken);
+}
+
+/* ---- Gradients ----------------------------------------------------------
+   Decorative gradients built from 900/950 stops are dark by construction, so
+   they stayed dark in light mode — that is what stranded black panels on a
+   white page. Flatten them to a themed surface; it drops a lot of visual
+   noise at the same time.
+
+   Stop names are anchored the same way as the utilities above so that a
+   `hover:from-*` variant does not restyle the element at rest. */
+
+:root [class*="bg-gradient-to-"][class^="from-slate-9"], :root [class*="bg-gradient-to-"][class*=" from-slate-9"],
+:root [class*="bg-gradient-to-"][class^="from-navy-9"], :root [class*="bg-gradient-to-"][class*=" from-navy-9"],
+:root [class*="bg-gradient-to-"][class^="from-zinc-9"], :root [class*="bg-gradient-to-"][class*=" from-zinc-9"],
+:root [class*="bg-gradient-to-"][class^="from-emerald-9"], :root [class*="bg-gradient-to-"][class*=" from-emerald-9"],
+:root [class*="bg-gradient-to-"][class^="from-indigo-9"], :root [class*="bg-gradient-to-"][class*=" from-indigo-9"],
+:root [class*="bg-gradient-to-"][class^="from-purple-9"], :root [class*="bg-gradient-to-"][class*=" from-purple-9"],
+:root [class*="bg-gradient-to-"][class^="from-cyan-9"], :root [class*="bg-gradient-to-"][class*=" from-cyan-9"],
+:root [class*="bg-gradient-to-"][class^="from-amber-9"], :root [class*="bg-gradient-to-"][class*=" from-amber-9"],
+:root [class*="bg-gradient-to-"][class^="from-rose-9"], :root [class*="bg-gradient-to-"][class*=" from-rose-9"],
+:root [class*="bg-gradient-to-"][class^="via-slate-9"], :root [class*="bg-gradient-to-"][class*=" via-slate-9"],
+:root [class*="bg-gradient-to-"][class^="via-navy-9"], :root [class*="bg-gradient-to-"][class*=" via-navy-9"],
+:root [class*="bg-gradient-to-"][class^="to-slate-9"], :root [class*="bg-gradient-to-"][class*=" to-slate-9"],
+:root [class*="bg-gradient-to-"][class^="to-purple-9"], :root [class*="bg-gradient-to-"][class*=" to-purple-9"],
+:root [class*="bg-gradient-to-"][class^="to-cyan-9"], :root [class*="bg-gradient-to-"][class*=" to-cyan-9"],
+:root [class*="bg-gradient-to-"][class^="to-amber-9"], :root [class*="bg-gradient-to-"][class*=" to-amber-9"],
+:root [class*="bg-gradient-to-"][class^="to-emerald-9"], :root [class*="bg-gradient-to-"][class*=" to-emerald-9"] {
+  background-image: none;
+  background-color: var(--surface-sunken);
+}
+
+
+/* Saturated call-to-action gradients collapse to one solid accent. These
+   stay fixed across both themes because they always carry white text. */
+
+:root [class*="bg-gradient-to-"][class^="from-indigo-4"], :root [class*="bg-gradient-to-"][class*=" from-indigo-4"],
+:root [class*="bg-gradient-to-"][class^="from-indigo-5"], :root [class*="bg-gradient-to-"][class*=" from-indigo-5"],
+:root [class*="bg-gradient-to-"][class^="from-indigo-6"], :root [class*="bg-gradient-to-"][class*=" from-indigo-6"],
+:root [class*="bg-gradient-to-"][class^="from-blue-5"], :root [class*="bg-gradient-to-"][class*=" from-blue-5"],
+:root [class*="bg-gradient-to-"][class^="from-blue-6"], :root [class*="bg-gradient-to-"][class*=" from-blue-6"] {
+  background-image: none;
+  background-color: #4f46e5;
   color: #ffffff;
-  background-image:
-    linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px),
-    radial-gradient(circle at 80% -10%, rgba(239, 68, 68, 0.14), transparent 36rem),
-    radial-gradient(circle at -10% 85%, rgba(16, 185, 129, 0.12), transparent 32rem);
-  background-size: 36px 36px, 36px 36px, auto, auto;
 }
 
-/* Subtle scanline overlay */
-body.theme-hacker::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 999;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.08) 0px,
-    rgba(0, 0, 0, 0.08) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  opacity: 0.25;
+:root [class*="bg-gradient-to-"][class^="from-purple-4"], :root [class*="bg-gradient-to-"][class*=" from-purple-4"],
+:root [class*="bg-gradient-to-"][class^="from-purple-5"], :root [class*="bg-gradient-to-"][class*=" from-purple-5"],
+:root [class*="bg-gradient-to-"][class^="from-purple-6"], :root [class*="bg-gradient-to-"][class*=" from-purple-6"],
+:root [class*="bg-gradient-to-"][class^="from-violet-5"], :root [class*="bg-gradient-to-"][class*=" from-violet-5"],
+:root [class*="bg-gradient-to-"][class^="from-violet-6"], :root [class*="bg-gradient-to-"][class*=" from-violet-6"] {
+  background-image: none;
+  background-color: #7c3aed;
+  color: #ffffff;
 }
 
-body.theme-hacker aside {
-  background-color: rgba(10, 10, 14, 0.98);
-  border-color: #272732;
+:root [class*="bg-gradient-to-"][class^="from-emerald-4"], :root [class*="bg-gradient-to-"][class*=" from-emerald-4"],
+:root [class*="bg-gradient-to-"][class^="from-emerald-5"], :root [class*="bg-gradient-to-"][class*=" from-emerald-5"],
+:root [class*="bg-gradient-to-"][class^="from-emerald-6"], :root [class*="bg-gradient-to-"][class*=" from-emerald-6"],
+:root [class*="bg-gradient-to-"][class^="from-green-5"], :root [class*="bg-gradient-to-"][class*=" from-green-5"],
+:root [class*="bg-gradient-to-"][class^="from-teal-5"], :root [class*="bg-gradient-to-"][class*=" from-teal-5"] {
+  background-image: none;
+  background-color: #059669;
+  color: #ffffff;
 }
 
-body.theme-hacker .bg-surface {
-  background-color: #141419;
-  border-color: #272732;
+:root [class*="bg-gradient-to-"][class^="from-amber-3"], :root [class*="bg-gradient-to-"][class*=" from-amber-3"],
+:root [class*="bg-gradient-to-"][class^="from-amber-4"], :root [class*="bg-gradient-to-"][class*=" from-amber-4"],
+:root [class*="bg-gradient-to-"][class^="from-amber-5"], :root [class*="bg-gradient-to-"][class*=" from-amber-5"],
+:root [class*="bg-gradient-to-"][class^="from-yellow-4"], :root [class*="bg-gradient-to-"][class*=" from-yellow-4"] {
+  background-image: none;
+  background-color: #b45309;
+  color: #ffffff;
 }
 
-body.theme-hacker .bg-surface-hover:hover {
-  background-color: #1c1c24;
+:root [class*="bg-gradient-to-"][class^="from-rose-4"], :root [class*="bg-gradient-to-"][class*=" from-rose-4"],
+:root [class*="bg-gradient-to-"][class^="from-rose-5"], :root [class*="bg-gradient-to-"][class*=" from-rose-5"],
+:root [class*="bg-gradient-to-"][class^="from-rose-6"], :root [class*="bg-gradient-to-"][class*=" from-rose-6"],
+:root [class*="bg-gradient-to-"][class^="from-red-5"], :root [class*="bg-gradient-to-"][class*=" from-red-5"] {
+  background-image: none;
+  background-color: #e11d48;
+  color: #ffffff;
 }
 
-body.theme-hacker .bg-navy-950 {
-  background-color: #0a0a0e;
+:root [class*="bg-gradient-to-"][class^="from-cyan-4"], :root [class*="bg-gradient-to-"][class*=" from-cyan-4"],
+:root [class*="bg-gradient-to-"][class^="from-cyan-5"], :root [class*="bg-gradient-to-"][class*=" from-cyan-5"],
+:root [class*="bg-gradient-to-"][class^="from-sky-5"], :root [class*="bg-gradient-to-"][class*=" from-sky-5"] {
+  background-image: none;
+  background-color: #0891b2;
+  color: #ffffff;
 }
 
-body.theme-hacker .bg-navy-900 {
-  background-color: #101015;
-}
 
-body.theme-hacker .border-border {
-  border-color: #272732;
-}
+/* A solid CTA owns its own text color; keep the remaps above from fighting it. */
 
-body.theme-hacker .live-dot {
-  background: #00ff66;
-  box-shadow: 0 0 0 3px rgba(0, 255, 102, 0.2), 0 0 10px #00ff66;
-}
-
-/* ==========================================================================
-   THEME 2: WARM SAND, MATTE OATMEAL & BISQUE (Zero White Glare / High Contrast Dark Text)
-   ========================================================================== */
-body.theme-defense {
-  --surface: #f3ebd9;
-  --surface-hover: #e6dac4;
-  --navy-950: #ded1bc;
-  --navy-900: #d6c7b0;
-  --navy-800: #cec0a7;
-  --border-color: #b5a489;
-  --text-primary: #0c0a09;
-  --text-secondary: #1c1917;
-  --text-muted: #292524;
-
-  background-color: #e9dfcf !important;
-  color: #0c0a09 !important;
-  background-image:
-    radial-gradient(circle at 90% -10%, rgba(217, 119, 6, 0.08), transparent 36rem),
-    radial-gradient(circle at -10% 85%, rgba(16, 185, 129, 0.07), transparent 32rem) !important;
-}
-
-body.theme-defense aside {
-  background-color: #ded2bd !important;
-  border-color: #cfbfab !important;
-  color: #1c1917 !important;
-  box-shadow: 2px 0 15px rgba(68, 55, 41, 0.08);
-}
-
-body.theme-defense aside .brand-wordmark {
-  color: #1c1917 !important;
-}
-
-body.theme-defense aside nav a {
-  color: #1c1917 !important;
-}
-
-body.theme-defense aside nav a:hover {
-  background-color: #d2c4ae !important;
-  border-color: #beaf9b !important;
-  color: #1c1917 !important;
-}
-
-body.theme-defense .bg-surface {
-  background-color: #f3ebd9 !important;
-  border-color: #cbbca4 !important;
-  color: #1c1917 !important;
-  box-shadow: 0 4px 18px rgba(68, 55, 41, 0.06) !important;
-}
-
-body.theme-defense .bg-surface-hover:hover {
-  background-color: #e6dac4 !important;
-}
-
-body.theme-defense .bg-navy-950,
-body.theme-defense .bg-navy-900,
-body.theme-defense .bg-navy-800 {
-  background-color: #ded1bc !important;
-  border-color: #cbbca4 !important;
-  color: #1c1917 !important;
-}
-
-body.theme-defense .border-border {
-  border-color: #cbbca4 !important;
+:root [class*="bg-gradient-to-"][class^="from-indigo-4"] *, :root [class*="bg-gradient-to-"][class*=" from-indigo-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-indigo-5"] *, :root [class*="bg-gradient-to-"][class*=" from-indigo-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-indigo-6"] *, :root [class*="bg-gradient-to-"][class*=" from-indigo-6"] *,
+:root [class*="bg-gradient-to-"][class^="from-blue-5"] *, :root [class*="bg-gradient-to-"][class*=" from-blue-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-blue-6"] *, :root [class*="bg-gradient-to-"][class*=" from-blue-6"] *,
+:root [class*="bg-gradient-to-"][class^="from-purple-4"] *, :root [class*="bg-gradient-to-"][class*=" from-purple-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-purple-5"] *, :root [class*="bg-gradient-to-"][class*=" from-purple-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-purple-6"] *, :root [class*="bg-gradient-to-"][class*=" from-purple-6"] *,
+:root [class*="bg-gradient-to-"][class^="from-violet-5"] *, :root [class*="bg-gradient-to-"][class*=" from-violet-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-violet-6"] *, :root [class*="bg-gradient-to-"][class*=" from-violet-6"] *,
+:root [class*="bg-gradient-to-"][class^="from-emerald-4"] *, :root [class*="bg-gradient-to-"][class*=" from-emerald-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-emerald-5"] *, :root [class*="bg-gradient-to-"][class*=" from-emerald-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-emerald-6"] *, :root [class*="bg-gradient-to-"][class*=" from-emerald-6"] *,
+:root [class*="bg-gradient-to-"][class^="from-green-5"] *, :root [class*="bg-gradient-to-"][class*=" from-green-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-teal-5"] *, :root [class*="bg-gradient-to-"][class*=" from-teal-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-amber-3"] *, :root [class*="bg-gradient-to-"][class*=" from-amber-3"] *,
+:root [class*="bg-gradient-to-"][class^="from-amber-4"] *, :root [class*="bg-gradient-to-"][class*=" from-amber-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-amber-5"] *, :root [class*="bg-gradient-to-"][class*=" from-amber-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-yellow-4"] *, :root [class*="bg-gradient-to-"][class*=" from-yellow-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-rose-4"] *, :root [class*="bg-gradient-to-"][class*=" from-rose-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-rose-5"] *, :root [class*="bg-gradient-to-"][class*=" from-rose-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-rose-6"] *, :root [class*="bg-gradient-to-"][class*=" from-rose-6"] *,
+:root [class*="bg-gradient-to-"][class^="from-red-5"] *, :root [class*="bg-gradient-to-"][class*=" from-red-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-cyan-4"] *, :root [class*="bg-gradient-to-"][class*=" from-cyan-4"] *,
+:root [class*="bg-gradient-to-"][class^="from-cyan-5"] *, :root [class*="bg-gradient-to-"][class*=" from-cyan-5"] *,
+:root [class*="bg-gradient-to-"][class^="from-sky-5"] *, :root [class*="bg-gradient-to-"][class*=" from-sky-5"] * {
+  color: inherit;
 }
 
 /* ==========================================================================
-   GLOBAL HIGH-CONTRAST TEXT RULES FOR ALL 11 TABS IN LIGHT MODE
+   Components
    ========================================================================== */
-body.theme-defense h1,
-body.theme-defense h2,
-body.theme-defense h3,
-body.theme-defense h4,
-body.theme-defense h5,
-body.theme-defense h6,
-body.theme-defense strong,
-body.theme-defense b {
-  color: #1c1917 !important;
+
+aside, header, footer {
+  background-color: var(--surface);
+  border-color: var(--border-color);
 }
 
-body.theme-defense p,
-body.theme-defense span:not([class*="bg-"]):not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-indigo"]):not([class*="text-purple"]):not([class*="text-signal"]),
-body.theme-defense div:not([class*="bg-"]):not([class*="text-emerald"]):not([class*="text-rose"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-indigo"]):not([class*="text-purple"]):not([class*="text-signal"]),
-body.theme-defense label,
-body.theme-defense li,
-body.theme-defense blockquote,
-body.theme-defense pre,
-body.theme-defense code {
-  color: #24201a !important;
-}
-
-/* Override all light Tailwind text colors to deep ink */
-body.theme-defense .text-white,
-body.theme-defense .text-slate-100,
-body.theme-defense .text-slate-200,
-body.theme-defense .text-slate-300,
-body.theme-defense .text-gray-100,
-body.theme-defense .text-gray-200,
-body.theme-defense .text-gray-300,
-body.theme-defense .text-zinc-100,
-body.theme-defense .text-zinc-200,
-body.theme-defense .text-zinc-300,
-body.theme-defense .text-text-primary {
-  color: #1c1917 !important;
-}
-
-body.theme-defense .text-slate-400,
-body.theme-defense .text-gray-400,
-body.theme-defense .text-zinc-400,
-body.theme-defense .text-text-secondary {
-  color: #292524 !important;
-}
-
-body.theme-defense .text-slate-500,
-body.theme-defense .text-slate-600,
-body.theme-defense .text-gray-500,
-body.theme-defense .text-zinc-500,
-body.theme-defense .text-text-muted {
-  color: #443e35 !important;
-}
-
-/* Monospace font elements (JSON, logs, codes) */
-body.theme-defense .font-mono {
-  color: #1c1917 !important;
-}
-
-/* High-Contrast Colored Text & Badges for Light Theme */
-body.theme-defense .text-emerald-400,
-body.theme-defense .text-emerald-300,
-body.theme-defense .text-emerald-200,
-body.theme-defense .text-signal-green {
-  color: #065f46 !important; /* Deep forest emerald */
-}
-
-body.theme-defense .text-amber-400,
-body.theme-defense .text-amber-300,
-body.theme-defense .text-amber-200,
-body.theme-defense .text-signal-amber {
-  color: #78350f !important; /* Rich amber brown */
-}
-
-body.theme-defense .text-rose-400,
-body.theme-defense .text-rose-300,
-body.theme-defense .text-rose-200,
-body.theme-defense .text-accent-red,
-body.theme-defense .text-accent-red-light,
-body.theme-defense .text-signal-rose {
-  color: #881337 !important; /* Deep wine crimson */
-}
-
-body.theme-defense .text-cyan-400,
-body.theme-defense .text-cyan-300,
-body.theme-defense .text-cyan-200,
-body.theme-defense .text-signal-cyan,
-body.theme-defense .text-sky-400,
-body.theme-defense .text-sky-300 {
-  color: #155e75 !important; /* Deep navy ocean cyan */
-}
-
-body.theme-defense .text-indigo-400,
-body.theme-defense .text-indigo-300,
-body.theme-defense .text-indigo-200 {
-  color: #312e81 !important; /* Deep rich indigo */
-}
-
-body.theme-defense .text-purple-400,
-body.theme-defense .text-purple-300,
-body.theme-defense .text-purple-200,
-body.theme-defense .text-signal-purple {
-  color: #581c87 !important; /* Deep royal purple */
-}
-
-/* Soft tinted badge backgrounds in light mode with high-contrast borders */
-body.theme-defense .bg-emerald-500\/10,
-body.theme-defense .bg-emerald-500\/15,
-body.theme-defense .bg-emerald-500\/20,
-body.theme-defense .bg-emerald-950\/20,
-body.theme-defense .bg-emerald-950\/30,
-body.theme-defense .bg-emerald-950\/40,
-body.theme-defense .bg-emerald-950\/60,
-body.theme-defense .bg-emerald-950\/80 {
-  background-color: #d1fae5 !important;
-  border-color: #6ee7b7 !important;
-  color: #065f46 !important;
-}
-
-body.theme-defense .bg-rose-500\/10,
-body.theme-defense .bg-rose-500\/15,
-body.theme-defense .bg-rose-500\/20,
-body.theme-defense .bg-rose-950\/20,
-body.theme-defense .bg-rose-950\/30,
-body.theme-defense .bg-rose-950\/40,
-body.theme-defense .bg-rose-950\/60,
-body.theme-defense .bg-rose-950\/80 {
-  background-color: #ffe4e6 !important;
-  border-color: #fda4af !important;
-  color: #881337 !important;
-}
-
-body.theme-defense .bg-amber-500\/10,
-body.theme-defense .bg-amber-500\/15,
-body.theme-defense .bg-amber-500\/20,
-body.theme-defense .bg-amber-950\/20,
-body.theme-defense .bg-amber-950\/30,
-body.theme-defense .bg-amber-950\/40,
-body.theme-defense .bg-amber-950\/60 {
-  background-color: #fef3c7 !important;
-  border-color: #fcd34d !important;
-  color: #78350f !important;
-}
-
-body.theme-defense .bg-purple-500\/10,
-body.theme-defense .bg-purple-500\/15,
-body.theme-defense .bg-purple-500\/20,
-body.theme-defense .bg-purple-950\/20,
-body.theme-defense .bg-purple-950\/30,
-body.theme-defense .bg-purple-950\/40 {
-  background-color: #f3e8ff !important;
-  border-color: #d8b4fe !important;
-  color: #581c87 !important;
-}
-
-body.theme-defense .bg-indigo-500\/10,
-body.theme-defense .bg-indigo-500\/15,
-body.theme-defense .bg-indigo-500\/20,
-body.theme-defense .bg-indigo-950\/20,
-body.theme-defense .bg-indigo-950\/30,
-body.theme-defense .bg-indigo-950\/60 {
-  background-color: #e0e7ff !important;
-  border-color: #a5b4fc !important;
-  color: #312e81 !important;
-}
-
-body.theme-defense .bg-cyan-500\/10,
-body.theme-defense .bg-cyan-500\/15,
-body.theme-defense .bg-cyan-500\/20,
-body.theme-defense .bg-cyan-950\/20,
-body.theme-defense .bg-cyan-950\/30,
-body.theme-defense .bg-cyan-950\/60 {
-  background-color: #cffafe !important;
-  border-color: #67e8f9 !important;
-  color: #155e75 !important;
-}
-
-body.theme-defense .bg-black\/30,
-body.theme-defense .bg-black\/40,
-body.theme-defense .bg-black\/60,
-body.theme-defense .bg-black\/80 {
-  background-color: #ded1bc !important;
-  border-color: #cbbca4 !important;
-  color: #1c1917 !important;
-}
-
-body.theme-defense table th {
-  background-color: #d4c7b2 !important;
-  color: #1c1917 !important;
-  font-weight: 700 !important;
-}
-
-body.theme-defense table td {
-  color: #1c1917 !important;
-  border-color: #cbbca4 !important;
-}
-
-body.theme-defense table tr:hover {
-  background-color: #eae0cd !important;
-}
-
-body.theme-defense input,
-body.theme-defense select,
-body.theme-defense textarea {
-  background-color: #f7efe1 !important;
-  color: #1c1917 !important;
-  border-color: #c2b29b !important;
-}
-
-body.theme-defense .live-dot {
-  background: #059669;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.3);
-}
-
-/* Charts & Recharts in Light Mode */
-body.theme-defense .recharts-text,
-body.theme-defense .recharts-cartesian-axis-tick-value,
-body.theme-defense .recharts-legend-item-text {
-  fill: #1c1917 !important;
-  color: #1c1917 !important;
-}
-
-body.theme-defense .recharts-cartesian-grid line {
-  stroke: #cbbca4 !important;
-}
-
-body.theme-defense .recharts-default-tooltip {
-  background-color: #f3ebd9 !important;
-  border: 1px solid #cbbca4 !important;
-  color: #1c1917 !important;
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-body.theme-hacker ::-webkit-scrollbar-track {
-  background: #02050a;
-}
-body.theme-hacker ::-webkit-scrollbar-thumb {
-  background: #152745;
-  border-radius: 3px;
-}
-body.theme-hacker ::-webkit-scrollbar-thumb:hover {
-  background: #00ff66;
-}
-
-body.theme-defense ::-webkit-scrollbar-track {
-  background: #dfd2be;
-}
-body.theme-defense ::-webkit-scrollbar-thumb {
-  background: #c2b29b;
-  border-radius: 3px;
-}
-body.theme-defense ::-webkit-scrollbar-thumb:hover {
-  background: #9d8c72;
-}
-
-/* Common Brand Mark */
 .brand-mark {
-  position: relative;
-  background: linear-gradient(135deg, #e63946, #991b1b);
-  box-shadow: 0 4px 14px rgba(230, 57, 70, 0.3);
+  background: linear-gradient(135deg, var(--accent-red), var(--accent-purple));
+  box-shadow: var(--shadow-sm);
 }
+
+.brand-wordmark {
+  color: var(--text-primary);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  display: inline-block;
+  background: var(--accent-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-green) 18%, transparent);
+}
+
+table th {
+  background-color: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+table td {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+table tbody tr:hover {
+  background-color: var(--surface-hover);
+}
+
+input, select, textarea {
+  background-color: var(--surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Recharts */
+.recharts-text,
+.recharts-cartesian-axis-tick-value,
+.recharts-legend-item-text {
+  fill: var(--text-secondary);
+  color: var(--text-secondary);
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--border-color);
+}
+
+.recharts-default-tooltip {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-md);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 6px;
+  border: 2px solid var(--canvas);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+* {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-width: thin;
+}
+
+/* ==========================================================================
+   Motion — restrained, and fully removable
+   ========================================================================== */
 
 @keyframes popIn {
-  0% { opacity: 0; transform: scale(0.85); }
-  100% { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .animate-popIn {
-  animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease both;
 }
 
 @keyframes page-arrival {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 main > div {
-  animation: page-arrival 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: page-arrival 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* ── Beginner Assistant Spotlight Tour Highlighting ────────────────── */
-@keyframes tourPulseHalo {
-  0% {
-    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.9), 0 0 30px rgba(250, 204, 21, 0.7);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 0 16px rgba(250, 204, 21, 0), 0 0 45px rgba(245, 158, 11, 0.9);
-    transform: scale(1.02);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0), 0 0 30px rgba(250, 204, 21, 0.7);
-    transform: scale(1);
-  }
-}
-
+/* Guided-tour highlight: a clear ring, not a pulsing halo. */
 .tour-spotlight-active {
-  position: relative !important;
-  z-index: 45 !important;
-  border-color: #facc15 !important;
-  animation: tourPulseHalo 1.8s infinite ease-in-out !important;
-  outline: 3px solid #facc15 !important;
-  outline-offset: 4px !important;
-  transition: all 0.3s ease-in-out !important;
+  position: relative;
+  z-index: 45;
+  border-color: var(--accent-amber);
+  outline: 2px solid var(--accent-amber);
+  outline-offset: 3px;
+  border-radius: 12px;
 }
 
-body.theme-defense .tour-spotlight-active {
-  border-color: #f59e0b !important;
-  outline-color: #f59e0b !important;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.3), 0 0 30px rgba(245, 158, 11, 0.4) !important;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -27,6 +27,11 @@ from pydantic import BaseModel, Field
 
 # Vercel loads this file as api/index.py but does not add api/ to sys.path.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# backend/ holds lab_engine and risk, which are pure stdlib and safe to import
+# here. Both APIs share them so a run scores identically in dev and in prod.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+
+import lab_engine
 
 from replay_app import app
 
@@ -88,31 +93,9 @@ async def _vercel_explain_term(body: ExplainTermRequest):
 # AI Defense Lab 2 (Red Team Control Center) Serverless Handlers
 # ---------------------------------------------------------------------------
 
-_SAMPLE_CUSTOMERS = [
-    {"customer_id": "C0001", "city": "Mumbai", "usual_payment_method": "UPI", "usual_device_id": "D0001", "average_amount": 2028, "daily_txns": 1, "device_stability": 0.94, "spending_regularity": 0.86, "velocity_signal": 0.20},
-    {"customer_id": "C0002", "city": "Pune", "usual_payment_method": "CREDIT_CARD", "usual_device_id": "D0002", "average_amount": 3223, "daily_txns": 3, "device_stability": 0.78, "spending_regularity": 0.71, "velocity_signal": 0.65},
-    {"customer_id": "C0003", "city": "Bangalore", "usual_payment_method": "NET_BANKING", "usual_device_id": "D0003", "average_amount": 3220, "daily_txns": 3, "device_stability": 0.62, "spending_regularity": 0.58, "velocity_signal": 0.88},
-    {"customer_id": "C0004", "city": "Delhi", "usual_payment_method": "UPI", "usual_device_id": "D0004", "average_amount": 1450, "daily_txns": 2, "device_stability": 0.91, "spending_regularity": 0.82, "velocity_signal": 0.35},
-    {"customer_id": "C0005", "city": "Hyderabad", "usual_payment_method": "DEBIT_CARD", "usual_device_id": "D0005", "average_amount": 2890, "daily_txns": 2, "device_stability": 0.84, "spending_regularity": 0.75, "velocity_signal": 0.45},
-    {"customer_id": "C0006", "city": "Chennai", "usual_payment_method": "UPI", "usual_device_id": "D0006", "average_amount": 1980, "daily_txns": 4, "device_stability": 0.69, "spending_regularity": 0.64, "velocity_signal": 0.78},
-    {"customer_id": "C0007", "city": "Kolkata", "usual_payment_method": "NET_BANKING", "usual_device_id": "D0007", "average_amount": 4150, "daily_txns": 1, "device_stability": 0.95, "spending_regularity": 0.90, "velocity_signal": 0.15},
-    {"customer_id": "C0008", "city": "Ahmedabad", "usual_payment_method": "CREDIT_CARD", "usual_device_id": "D0008", "average_amount": 3670, "daily_txns": 3, "device_stability": 0.73, "spending_regularity": 0.68, "velocity_signal": 0.60},
-    {"customer_id": "C0009", "city": "Jaipur", "usual_payment_method": "UPI", "usual_device_id": "D0009", "average_amount": 1200, "daily_txns": 2, "device_stability": 0.88, "spending_regularity": 0.79, "velocity_signal": 0.40},
-    {"customer_id": "C0010", "city": "Surat", "usual_payment_method": "UPI", "usual_device_id": "D0010", "average_amount": 2540, "daily_txns": 3, "device_stability": 0.80, "spending_regularity": 0.72, "velocity_signal": 0.55},
-]
-
-_ATTACK_FAMILIES = [
-    {"name": "behavioral_drift", "modality": "transaction", "description": "Gradual shift in spending amounts and merchant category distributions over time."},
-    {"name": "device_switch", "modality": "device", "description": "Transaction originating from uncharacteristic device and browser user-agent signatures."},
-    {"name": "velocity_anomaly", "modality": "temporal", "description": "High-frequency micro-transactions in rapid succession escaping single-event checks."},
-    {"name": "phishing", "modality": "communication", "description": "Targeted synthetic credential harvesting lure crafted from recipient profile metadata."},
-    {"name": "vishing", "modality": "voice", "description": "Deepfake voice-cloned social engineering call simulating trusted banking personnel."},
-    {"name": "video_deepfake", "modality": "video", "description": "Synthetic video call biometric injection bypassing automated KYC face verification."},
-    {"name": "synthetic_identity", "modality": "identity", "description": "Fabricated customer profile combining real and synthesized KYC identity attributes."},
-    {"name": "account_takeover", "modality": "credential", "description": "Unauthorized account access combining credential breach and device manipulation."},
-    {"name": "sleeper_transaction_pacing", "modality": "longitudinal", "description": "Slowly scaled low-value transactions acclimatizing behavioral baselines before cash-out."},
-    {"name": "adversarial_probing", "modality": "classifier", "description": "Systematic perturbation of transaction features to discover decision boundary crossings."},
-]
+# Single source of truth, shared with backend/main.py.
+_SAMPLE_CUSTOMERS = lab_engine.CUSTOMERS
+_ATTACK_FAMILIES = lab_engine.ATTACK_FAMILIES
 
 @app.get("/api/population/summary")
 async def _vercel_population_summary():
@@ -191,157 +174,106 @@ async def _vercel_scenarios():
         for idx, c in enumerate(_SAMPLE_CUSTOMERS)
     ]
 
-@app.get("/api/targets/{attack_type}")
-async def _vercel_targets_for_attack(attack_type: str):
+class AttackRunRequest(BaseModel):
+    target_id: str = Field(default="C0001", max_length=16)
+    attack_type: Optional[str] = Field(default=None, max_length=64)
+    scenario_type: Optional[str] = Field(default=None, max_length=64)
+    difficulty: str = Field(default="medium", pattern=r"^(easy|medium|hard)$")
+    intensity: float = Field(default=0.6, ge=0.1, le=1.0)
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
+
+
+@app.get("/api/attack-families")
+async def _vercel_attack_families():
     return [
-        {
-            "target_id": c["customer_id"],
-            "scenario_id": f"SCN-{2000 + idx:04d}",
-            "scenario_type": "TRANSACTION_ANOMALY",
-            "selected_attack": attack_type,
-            "score": round(0.75 + (idx % 5) * 0.05, 2),
-            "scenario": {"scenario_id": f"SCN-{2000 + idx:04d}", "target_id": c["customer_id"], "scenario_type": "TRANSACTION_ANOMALY"},
-        }
-        for idx, c in enumerate(_SAMPLE_CUSTOMERS[:5])
+        {"name": f["name"], "modality": f["modality"], "description": f["description"]}
+        for f in _ATTACK_FAMILIES
     ]
+
+
+@app.post("/api/targets/{selector}")
+async def _vercel_targeted_attack(selector: str, body: AttackRunRequest):
+    """Run against a named scenario type or a named attack family.
+
+    The Lab's scenario dropdown sends scenario types (TRANSACTION_ANOMALY),
+    while its per-family buttons send family names (velocity_anomaly), so
+    this accepts either rather than making the caller know the difference.
+    """
+    key = selector.strip()
+    if key in lab_engine.SCENARIO_FAMILIES:
+        return lab_engine.run_attack(
+            target_id=body.target_id, scenario_type=key,
+            difficulty=body.difficulty, intensity=body.intensity, seed=body.seed,
+        )
+    if key in lab_engine.ATTACK_BY_NAME:
+        return lab_engine.run_attack(
+            target_id=body.target_id, attack_type=key,
+            difficulty=body.difficulty, intensity=body.intensity, seed=body.seed,
+        )
+    return JSONResponse(
+        status_code=404,
+        content={"detail": f"Unknown scenario or attack family '{selector}'"},
+    )
+
 
 @app.post("/api/dataset/generate")
 async def _vercel_generate_dataset(body: Optional[dict] = None):
     return await _vercel_population_summary()
 
+
 @app.post("/api/attacks/run-all")
-async def _vercel_run_all_attacks(body: dict):
-    target_id = body.get("target_id", "C0001")
-    results = [
-        {"attack_type": a["name"], "status": "complete", "records": [{"attack_id": f"ATK-{a['name'][:3].upper()}-{target_id}", "is_fraud": True}]}
-        for a in _ATTACK_FAMILIES
-    ]
-    return {"target_id": target_id, "total": len(results), "successful": len(results), "results": results}
+async def _vercel_run_all_attacks(body: AttackRunRequest):
+    return lab_engine.run_all_attacks(target_id=body.target_id, seed=body.seed)
+
 
 @app.post("/api/attacks/run")
-async def _vercel_run_attack(body: dict):
-    target_id = body.get("target_id") or "C0001"
-    attack_type = body.get("attack_type")
-    scenario_type = body.get("scenario_type") or "TRANSACTION_ANOMALY"
-    cust = next((c for c in _SAMPLE_CUSTOMERS if c["customer_id"] == target_id), _SAMPLE_CUSTOMERS[0])
+async def _vercel_run_attack(body: AttackRunRequest):
+    """Plan, generate, and shadow-score one adversarial run."""
+    return lab_engine.run_attack(
+        target_id=body.target_id,
+        attack_type=body.attack_type,
+        scenario_type=body.scenario_type,
+        difficulty=body.difficulty,
+        intensity=body.intensity,
+        seed=body.seed,
+    )
 
-    if not attack_type:
-        candidates = {
-            "behavioral_drift": round(0.85 * (1 - cust["spending_regularity"]) + 0.3, 3),
-            "device_switch": round(0.9 * (1 - cust["device_stability"]) + 0.25, 3),
-            "velocity_anomaly": round(cust["velocity_signal"] * 0.8 + 0.2, 3),
-            "account_takeover": round(0.55 + (1 - cust["device_stability"]) * 0.4, 3),
-            "adversarial_probing": 0.65,
-            "sleeper_transaction_pacing": 0.72,
-        }
-        attack_type = max(candidates, key=candidates.get)
-    else:
-        candidates = {a["name"]: round(0.5 + random.random() * 0.4, 3) for a in _ATTACK_FAMILIES}
-        candidates[attack_type] = 0.92
 
-    run_id = f"RUN-{hashlib.sha256(f'{target_id}:{attack_type}:{random.random()}'.encode()).hexdigest()[:10].upper()}"
+class CockpitRequest(BaseModel):
+    vector: str = Field(default="voice-clone", max_length=64)
+    target_id: str = Field(default="C0001", max_length=16)
+    seed: Optional[int] = Field(default=None, ge=0, le=2_147_483_647)
 
-    events = [
-        {"stage": "target", "status": "complete", "description": f"Target {cust['customer_id']} acquired ({cust['city']})"},
-        {"stage": "observe", "status": "complete", "description": "Customer baseline telemetry loaded"},
-        {"stage": "plan", "status": "complete", "description": f"Planner selected {attack_type}"},
-        {"stage": "generate", "status": "complete", "description": f"Executing registered synthetic generator {attack_type}"},
-        {"stage": "execute", "status": "complete", "description": "Attack vector simulated in shadow execution space"},
-        {"stage": "record", "status": "complete", "description": "Ground truth payload recorded with is_fraud=True"},
-    ]
 
-    base_amt = cust["average_amount"]
-    records = [
-        {
-            "id": f"TXN-{target_id}-01",
-            "attack_id": f"ATK-{attack_type[:3].upper()}-01",
-            "amount": round(base_amt * 1.55, 2),
-            "hour": 14,
-            "signal": "4 txn/hr",
-            "risk_score": 0.89,
-            "recommended_action": "BLOCK",
-            "status": "flagged",
-            "features": {"txn_velocity_1h": 4, "is_new_payee": 1, "is_international": 1, "time_drift": 0.45},
-            "explanation": "Flagged by ML Classifier: Multi-signal anomaly with elevated velocity (4 txn/hr) and new unverified international payee account.",
-            "is_fraud": True,
-        },
-        {
-            "id": f"TXN-{target_id}-02",
-            "attack_id": f"ATK-{attack_type[:3].upper()}-02",
-            "amount": round(base_amt * 1.18, 2),
-            "hour": 15,
-            "signal": "3 txn/hr",
-            "risk_score": 0.74,
-            "recommended_action": "STEP_UP_AUTH",
-            "status": "flagged",
-            "features": {"txn_velocity_1h": 3, "is_new_payee": 1, "is_international": 0, "time_drift": 0.28},
-            "explanation": "Step-Up Authentication Triggered: Moderate velocity spike and new domestic beneficiary require biometric confirmation.",
-            "is_fraud": True,
-        },
-        {
-            "id": f"TXN-{target_id}-03",
-            "attack_id": f"ATK-{attack_type[:3].upper()}-03",
-            "amount": round(base_amt * 0.45, 2),
-            "hour": 16,
-            "signal": "1 txn/hr",
-            "risk_score": 0.28,
-            "recommended_action": "ALLOW",
-            "status": "allowed",
-            "features": {"txn_velocity_1h": 1, "is_new_payee": 0, "is_international": 0, "time_drift": 0.05},
-            "explanation": "Missed by Classifier (False Negative / Evaded): Low-value stealth payment mimicking routine spending slipped below the 0.50 threshold.",
-            "is_fraud": True,
-        },
-    ]
+@app.post("/api/cockpit/simulate")
+async def _vercel_cockpit_simulate(body: CockpitRequest):
+    import cockpit_engine
+    return cockpit_engine.simulate(body.vector, body.target_id, body.seed)
 
-    return {
-        "run_id": run_id,
-        "elapsed_ms": 42.5,
-        "planner_mode": "AUTONOMOUS ADVERSARIAL",
-        "scenario": {
-            "scenario_id": f"SCN-{target_id}-AUTO",
-            "scenario_type": scenario_type,
-            "target_id": target_id,
-            "transaction_context": {"amount": cust["average_amount"], "city": cust["city"], "channel": cust["usual_payment_method"]},
-        },
-        "plan": {
-            "attack_type": attack_type,
-            "difficulty": body.get("difficulty", "medium"),
-            "intensity": body.get("intensity", 0.6),
-            "target_id": target_id,
-            "rationale": f"High anomaly potential identified in {attack_type.replace('_', ' ')} based on target observable history in {cust['city']}.",
-            "parameters": {
-                "signals": {
-                    "amount_deviation": 0.74,
-                    "velocity_signal": cust["velocity_signal"],
-                    "device_stability": cust["device_stability"],
-                    "location_consistency": 0.82,
-                    "category_consistency": 0.68,
-                    "spending_regularity": cust["spending_regularity"],
-                },
-                "candidate_scores": candidates,
-                "applicable_attacks": list(candidates.keys()),
-            },
-        },
-        "generator_output": {
-            "status": "success",
-            "modality": "txn",
-            "records": records,
-        },
-        "defense_output": {
-            "flagged": 2,
-            "total": 3,
-            "evasion_rate": 0.33,
-            "detection_rate": 0.67,
-            "false_negatives": 1,
-        },
-        "events": events,
-        "records": records,
-    }
+
+@app.get("/api/cockpit/benchmark")
+async def _vercel_cockpit_benchmark(seed: int = 2026):
+    # Smaller corpus than the local default so the comparison finishes inside
+    # the serverless request budget; the seed still makes it reproducible.
+    import cockpit_engine
+    return cockpit_engine.benchmark(seed=seed, per_family=2, legit_per_customer=20)
+
 
 @app.get("/api/runs/{run_id}")
 async def _vercel_run_detail(run_id: str):
-    return await _vercel_run_attack({"target_id": "C0001"})
+    """Return a previously executed run so deep links stay honest.
 
+    Serverless instances are ephemeral, so a run created by one invocation
+    may not be visible to the next. Saying so beats silently returning a
+    different customer's run, which is what this endpoint used to do.
+    """
+    run = lab_engine.get_run(run_id)
+    if run is None:
+        return JSONResponse(
+            status_code=404,
+            content={"detail": f"Run {run_id} is not held by this instance. Re-run the attack to generate a fresh one."},
+        )
+    return run
 
 
 @app.post("/api/ai-defense-lab/run")
