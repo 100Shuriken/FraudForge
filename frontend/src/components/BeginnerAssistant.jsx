@@ -432,75 +432,41 @@ export default function BeginnerAssistant() {
     }
 
     return (
-        <div id="ai-copilot-guide-hub" className="mb-8 space-y-4">
-            {/* ── TOP DISTINCTIVE AI COPILOT HERO STRIP ── */}
-            <div className="relative overflow-hidden rounded-3xl p-4 sm:p-5 bg-gradient-to-r from-slate-950 via-amber-950/40 to-slate-950 border-2 border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.35),inset_0_0_20px_rgba(245,158,11,0.1)] transition-all">
-                {/* Subtle gold background gradient */}
-                <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-amber-500/10 to-transparent pointer-events-none" />
+        <div id="ai-copilot-guide-hub" className="mb-5 space-y-3">
+            {/* ── COMPACT AI COPILOT BAR (one row; expands only when a tour is active) ── */}
+            <div className="flex items-center justify-between gap-3 flex-wrap rounded-2xl px-4 py-2.5 bg-slate-950/80 border border-amber-500/30">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-base shrink-0">🤖</span>
+                    <span className="text-xs font-bold text-amber-200 truncate">AI Defense Copilot</span>
+                    <span className="hidden sm:inline text-[11px] text-slate-400 truncate">— spotlights what to click, {steps.length} steps on this page</span>
+                </div>
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Left Branding & Purpose */}
-                    <div className="flex items-center gap-3.5">
-                        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-300 border-2 border-amber-400 text-2xl shadow-[0_0_15px_rgba(245,158,11,0.6)]">
-                            <span>🤖</span>
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                            </span>
-                        </div>
-
-                        <div>
-                            <div className="flex items-center gap-2.5 flex-wrap">
-                                <h2 className="text-sm sm:text-base font-black text-white tracking-wide uppercase flex items-center gap-2">
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-400">
-                                        AI Defense Copilot
-                                    </span>
-                                    <span className="text-slate-400">·</span>
-                                    <span className="text-xs font-mono font-bold text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40">
-                                        Active Assistant
-                                    </span>
-                                </h2>
-                                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-extrabold shadow-sm">
-                                    🎯 {steps.length} Interactive Steps
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-300 mt-1 font-medium leading-relaxed">
-                                <strong className="text-amber-300">How it works:</strong> I spotlight each square and button with a gold/emerald halo, explain the underlying fraud/ML mechanics, and advance automatically as you click!
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Right High-Impact Actions */}
-                    <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-                        {!tourActive ? (
-                            <button
-                                type="button"
-                                onClick={() => startTour(0)}
-                                className="group relative px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-emerald-400 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(245,158,11,0.6)] hover:shadow-[0_0_35px_rgba(245,158,11,0.9)] transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                            >
-                                <span className="text-sm">🚀</span>
-                                <span>Start Spotlight Tour</span>
-                                <span className="text-slate-900 group-hover:translate-x-1 transition-transform">→</span>
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={closeTour}
-                                className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-rose-950 text-rose-300 font-extrabold text-xs border-2 border-rose-500/50 shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-                            >
-                                <span>✕ Exit Guided Tour</span>
-                            </button>
-                        )}
-
+                <div className="flex items-center gap-2 shrink-0">
+                    {!tourActive ? (
                         <button
                             type="button"
-                            onClick={() => setCatalogOpen(true)}
-                            className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-amber-950 text-amber-200 border-2 border-amber-500/50 font-bold text-xs shadow-md hover:border-amber-400 transition-all flex items-center gap-2 cursor-pointer"
+                            onClick={() => startTour(0)}
+                            className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:brightness-105 text-slate-950 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
-                            <span>📖</span>
-                            <span>Explain All Buttons</span>
+                            <span>🚀 Start Tour</span>
                         </button>
-                    </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={closeTour}
+                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950 text-rose-300 font-bold text-xs border border-rose-500/40 transition-all cursor-pointer"
+                        >
+                            <span>✕ Exit Tour</span>
+                        </button>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={() => setCatalogOpen(true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-amber-950 text-amber-200 border border-amber-500/40 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <span>📖 Explain Buttons</span>
+                    </button>
                 </div>
             </div>
 

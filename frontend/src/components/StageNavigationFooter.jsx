@@ -36,7 +36,7 @@ export default function StageNavigationFooter() {
                 <div className="w-full md:w-1/3 flex flex-col items-center justify-center text-center space-y-2">
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-mono font-bold text-text-primary">
-                            Stage {current.num} of 11
+                            Stage {current.num} of {NAVIGATION_STAGES.length}
                         </span>
                         <span className="text-xs text-text-muted">·</span>
                         <span className="text-xs font-semibold text-text-secondary">

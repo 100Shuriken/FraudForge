@@ -160,70 +160,29 @@ export default function App() {
                         </span>
                     </div>
 
-                    {/* Highly Obvious Interactive Control Center */}
-                    <div className="mt-4 p-3 rounded-2xl bg-surface border-2 border-border space-y-3 shadow-md">
-                        {/* Theme Toggle Pill */}
+                    {/* Judge Mode Switch — compact, single control (theme lives in the top header) */}
+                    <div className="mt-4 flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-surface border border-border">
                         <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                                    THEME MODE
-                                </span>
-                                <span className="text-[10px] font-mono font-bold text-signal-cyan">
-                                    {theme === 'hacker' ? '⚡ MATRIX' : '🛡️ DEFENSE'}
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-2 p-1 rounded-xl bg-navy-950 border border-border gap-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setTheme('hacker')}
-                                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                        theme === 'hacker'
-                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                                            : 'text-slate-400 hover:text-white'
-                                    }`}
-                                >
-                                    <span>⚡ Hacker</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setTheme('defense')}
-                                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                                        theme === 'defense'
-                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
-                                            : 'text-slate-400 hover:text-white'
-                                    }`}
-                                >
-                                    <span>🛡️ Defense</span>
-                                </button>
-                            </div>
+                            <span className="text-xs font-bold block">🏆 Judge Mode</span>
+                            <span className="text-[10px] text-text-muted">Executive summaries</span>
                         </div>
-
-                        {/* Judge Mode Switch */}
-                        <div className="pt-2 border-t border-border/60">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <span className="text-xs font-bold block">🏆 Judge Mode</span>
-                                    <span className="text-[10px] text-text-muted">Executive summaries</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setJudgeMode(!judgeMode)}
-                                    className={`relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out focus:outline-none ${
-                                        judgeMode
-                                            ? 'bg-amber-500 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.5)]'
-                                            : 'bg-navy-950 border-border'
-                                    }`}
-                                    role="switch"
-                                    aria-checked={judgeMode}
-                                >
-                                    <span
-                                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out mt-0.5 ${
-                                            judgeMode ? 'translate-x-6' : 'translate-x-1'
-                                        }`}
-                                    />
-                                </button>
-                            </div>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setJudgeMode(!judgeMode)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out focus:outline-none ${
+                                judgeMode
+                                    ? 'bg-amber-500 border-amber-400'
+                                    : 'bg-navy-950 border-border'
+                            }`}
+                            role="switch"
+                            aria-checked={judgeMode}
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out mt-0.5 ${
+                                    judgeMode ? 'translate-x-5' : 'translate-x-1'
+                                }`}
+                            />
+                        </button>
                     </div>
                 </div>
 
@@ -311,107 +270,72 @@ export default function App() {
             {/* ── Main Content Area on the Right ───────────────────────── */}
             <div className="flex-1 flex flex-col min-w-0 min-h-screen relative">
                 {/* Desktop Top Control Banner (Highly Obvious Quick Toggles) */}
-                <header className="hidden md:flex items-center justify-between px-8 py-3.5 border-b border-border bg-surface backdrop-blur-md sticky top-0 z-30 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-                            EVALUATION PLATFORM
+                <header className="hidden md:flex items-center justify-between px-6 lg:px-8 py-3 border-b border-border bg-surface backdrop-blur-md sticky top-0 z-30 shadow-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs font-semibold text-signal-cyan font-mono truncate">
+                            Mastercard Innovation Challenge 2026
                         </span>
-                        <span className="text-xs text-text-muted">·</span>
-                        <span className="text-xs font-semibold text-signal-cyan font-mono">
-                            MASTERCARD INNOVATION CHALLENGE 2026
-                        </span>
+                        {uiMode === 'technical' && selectedVector && (
+                            <Link
+                                to="/identify"
+                                className="ml-2 px-2.5 py-1 rounded-lg border border-rose-500/50 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer group shrink-0"
+                                title="Click to jump back to Attack Vector Library"
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                <span className="truncate max-w-[10rem]">{VECTOR_LABELS[selectedVector] || selectedVector}</span>
+                            </Link>
+                        )}
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        {/* Quick Theme Switcher Segmented Control */}
-                        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-navy-950 border border-border shadow-inner">
-                            <button
-                                type="button"
-                                onClick={() => setTheme('hacker')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                                    theme === 'hacker'
-                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                                        : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                                <span>⚡ Hacker Dark</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setTheme('defense')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                                    theme === 'defense'
-                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
-                                        : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                                <span>🛡️ Defense Light</span>
-                            </button>
-                        </div>
-
-                        {/* High-Visibility Dual View Mode Toggle Switch */}
-                        <div className="flex items-center p-1 rounded-2xl bg-slate-900 border-2 border-amber-500/50 shadow-md">
+                    <div className="flex items-center gap-3 shrink-0">
+                        {/* View Mode: the one control that matters most, kept prominent */}
+                        <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-amber-500/40">
                             <button
                                 type="button"
                                 onClick={() => toggleUiMode('consumer')}
-                                className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                                     uiMode === 'consumer'
-                                        ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow-md'
+                                        ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950'
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
-                                <span>👤 Consumer Simple</span>
+                                <span>👤 Consumer</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => toggleUiMode('technical')}
-                                className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                                     uiMode === 'technical'
-                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md'
+                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950'
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
-                                <span>🏆 Technical (Judges)</span>
+                                <span>🏆 Technical</span>
                             </button>
                         </div>
 
-                        {uiMode === 'technical' && (
-                            <>
-                                {/* High-Visibility AI Copilot Command Button */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const el = document.getElementById('ai-copilot-guide-hub')
-                                        if (el) {
-                                            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                                        }
-                                    }}
-                                    className="group relative px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-white border-2 border-amber-400 text-xs font-black flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_30px_rgba(245,158,11,0.7)] transition-all cursor-pointer active:scale-95"
-                                    title="Jump to Interactive AI Copilot Guided Assistant"
-                                >
-                                    <div className="relative flex h-2.5 w-2.5">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
-                                    </div>
-                                    <span className="text-amber-300 font-extrabold">🤖 AI COPILOT:</span>
-                                    <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-wider group-hover:brightness-110 shadow-sm">
-                                        GUIDED TOUR
-                                    </span>
-                                </button>
+                        {/* Theme — single control, lives only here */}
+                        <button
+                            type="button"
+                            onClick={toggleTheme}
+                            className="px-3 py-1.5 rounded-xl border border-border bg-navy-950 text-xs font-semibold flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white"
+                            title="Toggle Hacker / Defense theme"
+                        >
+                            {theme === 'hacker' ? '⚡ Hacker' : '🛡️ Defense'}
+                        </button>
 
-                                {/* Active Vector Tracing Tag in Header */}
-                                {selectedVector && (
-                                    <Link
-                                        to="/identify"
-                                        className="px-3 py-1.5 rounded-xl border border-rose-500/50 bg-rose-950/40 hover:bg-rose-900/60 text-rose-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer group shadow-sm"
-                                        title="Click to jump back to Attack Vector Library"
-                                    >
-                                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                                        <span>Tracing: <strong className="text-white group-hover:text-rose-300">{VECTOR_LABELS[selectedVector] || selectedVector}</strong></span>
-                                        <span className="text-[10px] opacity-75 ml-0.5">Change →</span>
-                                    </Link>
-                                )}
-                            </>
+                        {uiMode === 'technical' && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const el = document.getElementById('ai-copilot-guide-hub')
+                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                }}
+                                className="p-2 rounded-xl border border-border bg-navy-950 text-slate-300 hover:text-amber-300 hover:border-amber-500/40 transition-colors cursor-pointer"
+                                title="Jump to guided AI Copilot tour"
+                            >
+                                🤖
+                            </button>
                         )}
                     </div>
                 </header>

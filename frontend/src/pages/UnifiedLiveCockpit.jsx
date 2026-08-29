@@ -127,18 +127,13 @@ export default function UnifiedLiveCockpit() {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8 text-slate-100 font-sans">
             {/* ── Top Hero & One-Click Master Execution ── */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-navy-950 via-slate-900 to-amber-950/30 border-2 border-amber-500/50 shadow-2xl space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-navy-950 via-slate-900 to-amber-950/20 border border-amber-500/30 shadow-lg space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-amber-500/20">
                     <div>
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                            <span className="px-3 py-1 rounded-md text-xs font-black font-mono bg-gradient-to-r from-emerald-500 to-amber-500 text-slate-950 shadow-sm">
-                                ⚡ ALL-IN-ONE COMMAND COCKPIT
-                            </span>
-                            <span className="text-xs text-amber-300 font-bold">
-                                Entire Red Team Attack & Blue Team Defense in 1 Screen
-                            </span>
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+                        <span className="text-xs text-amber-300 font-semibold">
+                            Red Team attack + Blue Team defense, in one screen
+                        </span>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-0.5">
                             Generative AI Fraud & Adversarial ML Hardening
                         </h1>
                     </div>
@@ -147,7 +142,7 @@ export default function UnifiedLiveCockpit() {
                         type="button"
                         onClick={runCompleteSimulation}
                         disabled={simulating}
-                        className="group px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-amber-500 to-orange-500 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-95"
+                        className="group px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-amber-500 to-orange-500 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 active:scale-95"
                     >
                         {simulating ? (
                             <>
