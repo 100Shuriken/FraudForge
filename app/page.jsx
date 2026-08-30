@@ -173,7 +173,7 @@ export default function Page() {
         {/* ══ 1. Hero. Asymmetric split. ══════════════════════════════ */}
         <section className="mx-auto grid max-w-[1400px] items-center gap-12 px-5 pt-16 pb-20 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:pt-24 lg:pb-28">
           <div className="lg:col-span-7">
-            <h1 className="text-[2.6rem] font-semibold leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.2rem]">
+            <h1 className="text-[2.6rem] font-semibold leading-[1.05] tracking-tight sm:text-5xl xl:text-[4.2rem]">
               Fraud that has
               <br />
               <span className="text-signal">never been seen</span> before
