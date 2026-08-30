@@ -97,3 +97,60 @@ a[data-cta] {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
+
+/* ==========================================================================
+   Print / Save as PDF
+
+   The browser's own print-to-PDF gives a real vector PDF with selectable
+   text, so no PDF library is needed. Strips app chrome and forces an
+   ink-friendly light palette regardless of the on-screen theme.
+   ========================================================================== */
+@media print {
+  header,
+  footer,
+  .ff-no-print {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    border-color: #ccc !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  section,
+  table,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    font-size: 9pt !important;
+  }
+
+  @page {
+    margin: 16mm;
+  }
+}

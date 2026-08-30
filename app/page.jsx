@@ -1,525 +1,395 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Play, ArrowsClockwise } from "@phosphor-icons/react";
 import {
-  ArrowRight,
-  ArrowUpRight,
-  Microphone,
-  VideoCamera,
-  IdentificationCard,
-  EnvelopeSimple,
-  Storefront,
-  ChatCircleDots,
-} from "@phosphor-icons/react/dist/ssr";
-import { Reveal, RevealGroup, RevealItem, Lift } from "@/components/motion-primitives";
+  Shell, Panel, Stat, Verdict, Spinner, ErrorNote, pct, money,
+} from "@/components/shell";
 
-const APP_URL = "https://fraud-forge-nine.vercel.app";
-
-/* Images: no image-generation tool was available in this environment, so these
-   fall back to picsum.photos (Section 4.8 tier 2). The seed makes the choice
-   reproducible but does NOT select subject matter, so every one of them is
-   atmospheric rather than illustrative and is marked decorative (alt="").
-   Swapping in art-directed photography is the single biggest upgrade left. */
-
-
-/* Every figure below comes from one reproducible run of the scoring engine at
-   seed 2026. The seed is printed on the page so a reader can regenerate it. */
-const BENCH = {
-  seed: 2026,
-  corpusFraud: 351,
-  corpusLegit: 300,
-  legacyRecall: 0.222,
-  hardenedRecall: 0.513,
-  legacyFpr: 0.0167,
-  hardenedFpr: 0.0033,
-  recovered: 343398,
-  fraudValue: 1262774,
+const describeError = (err) => {
+  const m = err?.message || String(err);
+  return /failed to fetch|networkerror|load failed/i.test(m)
+    ? "Cannot reach the scoring engine. Reload the page to retry."
+    : m;
 };
 
-const ROUNDS = [
-  {
-    name: "Baseline",
-    recall: 0.622,
-    precision: 0.977,
-    auc: 0.905,
-    mined: null,
-    note: "Trained on ordinary traffic and non-evasive fraud only.",
-  },
-  {
-    name: "Second pass",
-    recall: 0.859,
-    precision: 0.943,
-    auc: 0.911,
-    mined: 56,
-    note: "Mined the payments the baseline missed, then retrained on them.",
-  },
-  {
-    name: "Third pass",
-    recall: 0.881,
-    precision: 0.895,
-    auc: 0.926,
-    mined: 26,
-    note: "Mined again against a harder evasion set.",
-  },
-];
+export default function Cockpit() {
+  const [meta, setMeta] = useState(null);
+  const [targetId, setTargetId] = useState("C0001");
+  const [attackType, setAttackType] = useState("");
+  const [difficulty, setDifficulty] = useState("medium");
 
-const PIPELINE = [
-  {
-    verb: "Profile",
-    body: "Read the account's own baseline: what it usually spends, how often, and from which device.",
-  },
-  {
-    verb: "Plan",
-    body: "Rank ten attack families against that specific account, then pick the one it is least ready for.",
-  },
-  {
-    verb: "Synthesize",
-    body: "Write a payment sequence shaped to that family, not a single suspicious transaction.",
-  },
-  {
-    verb: "Score",
-    body: "Run every step past flat legacy rules, and past a scorer that grades against the account itself.",
-  },
-  {
-    verb: "Mine",
-    body: "Collect the payments that got through. Those become the training data.",
-  },
-  {
-    verb: "Retrain",
-    body: "Fold the misses back in and measure again on a held-out split that never moves.",
-  },
-];
+  const [run, setRun] = useState(null);
+  const [bench, setBench] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [benchBusy, setBenchBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(0);
 
-const VECTORS = [
-  {
-    Icon: Microphone,
-    name: "Voice cloning",
-    body: "A cloned executive voice authorising an urgent supplier payment.",
-    span: "lg:col-span-3",
-    img: "fraudforge-studio-microphone-dark",
-    h: 200,
-  },
-  {
-    Icon: VideoCamera,
-    name: "Deepfake video KYC",
-    body: "A face-swapped video call standing in for a real identity check.",
-    span: "lg:col-span-3",
-    img: "fraudforge-video-call-screen-night",
-    h: 200,
-  },
-  {
-    Icon: EnvelopeSimple,
-    name: "Business email compromise",
-    body: "A reply injected into a live invoice thread, changing only the account number.",
-    span: "lg:col-span-2",
-    img: null,
-  },
-  {
-    Icon: IdentificationCard,
-    name: "Synthetic identity",
-    body: "A genuine identity number blended with fabricated biometrics.",
-    span: "lg:col-span-2",
-    img: null,
-  },
-  {
-    Icon: Storefront,
-    name: "Merchant fronts",
-    body: "A generated storefront taking an order it will never fulfil.",
-    span: "lg:col-span-2",
-    img: null,
-  },
-  {
-    Icon: ChatCircleDots,
-    name: "Support agent impersonation",
-    body: "A fake in-app agent walking a customer through handing over a one-time code.",
-    span: "lg:col-span-6",
-    img: "fraudforge-support-chat-terminal-glow",
-    h: 170,
-  },
-];
+  useEffect(() => {
+    fetch("/api/customers")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(setMeta)
+      .catch((e) => setError(describeError(e)));
+  }, []);
 
-const pct = (n, d = 1) => `${(n * 100).toFixed(d)}%`;
-const money = (n) => `$${n.toLocaleString("en-US")}`;
+  const simulate = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId, attackType: attackType || null, difficulty }),
+      });
+      if (!res.ok) throw new Error(`Simulation failed, HTTP ${res.status}`);
+      const data = await res.json();
+      setRun(data);
+      setSelected(0);
+    } catch (e) {
+      setRun(null);
+      setError(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [targetId, attackType, difficulty]);
 
-export default function Page() {
+  useEffect(() => {
+    if (meta) simulate();
+  }, [meta, simulate]);
+
+  const runBenchmark = async () => {
+    setBenchBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/benchmark?seed=${Math.floor(Math.random() * 100000)}`);
+      if (!res.ok) throw new Error(`Benchmark failed, HTTP ${res.status}`);
+      setBench(await res.json());
+    } catch (e) {
+      setError(describeError(e));
+    } finally {
+      setBenchBusy(false);
+    }
+  };
+
+  const target = meta?.customers.find((c) => c.id === targetId);
+  const active = run?.records[selected];
+
   return (
-    <>
-      {/* ── Navigation. One line, 64px tall, never wraps. ───────────── */}
-      <header className="sticky top-0 z-50 border-b border-line/70 bg-ink/85 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-6 px-5 lg:px-8">
-          <a href="#top" className="flex shrink-0 items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-signal">
-              <span className="h-2.5 w-2.5 rounded-full bg-ink" />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">FraudForge</span>
-          </a>
+    <Shell>
+      <div className="space-y-6">
+        <ErrorNote>{error}</ErrorNote>
 
-          <div className="hidden items-center gap-7 text-sm text-bone-dim md:flex">
-            <a href="#evidence" className="transition-colors hover:text-bone">Evidence</a>
-            <a href="#loop" className="transition-colors hover:text-bone">The loop</a>
-            <a href="#vectors" className="transition-colors hover:text-bone">Vectors</a>
-            <a href="#limits" className="transition-colors hover:text-bone">Limits</a>
-          </div>
-
-          <a
-            href={APP_URL}
-            data-cta
-            className="shrink-0 whitespace-nowrap rounded-lg bg-signal px-4 py-2 text-sm font-semibold text-ink hover:bg-signal-deep hover:text-bone"
-          >
-            Open the demo
-          </a>
-        </nav>
-      </header>
-
-      <main id="top">
-        {/* ══ 1. Hero. Asymmetric split. ══════════════════════════════ */}
-        <section className="mx-auto grid max-w-[1400px] items-center gap-12 px-5 pt-16 pb-20 lg:grid-cols-12 lg:gap-16 lg:px-8 lg:pt-24 lg:pb-28">
-          <div className="lg:col-span-7">
-            <h1 className="text-[2.6rem] font-semibold leading-[1.05] tracking-tight sm:text-5xl xl:text-[4.2rem]">
-              Fraud that has
-              <br />
-              <span className="text-signal">never been seen</span> before
+        {/* ── Controls ────────────────────────────────────────────── */}
+        <div className="space-y-5">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight lg:text-3xl">
+              Attack an account, watch both detectors score it
             </h1>
-            <p className="mt-6 max-w-[52ch] text-lg leading-relaxed text-bone-dim">
-              A red team writes payment fraud your rules have never met. A blue team
-              learns from what it missed.
+            <p className="mt-2 max-w-[76ch] text-sm leading-relaxed text-bone-dim">
+              A red-team planner reads the account, picks the attack it is least ready for,
+              and writes a payment sequence. Every step is scored twice: once by flat
+              threshold rules, once by a scorer that grades against this account&apos;s own
+              baseline.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <a
-                href={APP_URL}
-                data-cta
-                className="inline-flex items-center gap-2 rounded-lg bg-signal px-5 py-3 text-sm font-semibold text-ink hover:bg-signal-deep hover:text-bone"
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-12">
+            <label className="lg:col-span-4">
+              <span className="mb-1.5 block text-xs font-medium text-bone-faint uppercase tracking-wide">
+                Target account
+              </span>
+              <select
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                className="w-full cursor-pointer rounded-lg border border-line bg-ink px-3 py-2.5 text-sm text-bone"
               >
-                Open the demo
-                <ArrowRight size={16} weight="bold" />
-              </a>
-              <a
-                href="#evidence"
-                data-cta
-                className="inline-flex items-center gap-2 rounded-lg border border-line-bright px-5 py-3 text-sm font-semibold text-bone hover:border-bone-faint"
+                {meta?.customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {c.id} · {c.city} · ${c.baseline.toLocaleString()} avg
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="lg:col-span-4">
+              <span className="mb-1.5 block text-xs font-medium text-bone-faint uppercase tracking-wide">
+                Attack family
+              </span>
+              <select
+                value={attackType}
+                onChange={(e) => setAttackType(e.target.value)}
+                className="w-full cursor-pointer rounded-lg border border-line bg-ink px-3 py-2.5 text-sm text-bone"
               >
-                See the numbers
-              </a>
+                <option value="">Auto, let the planner choose</option>
+                {meta?.families.map((f) => (
+                  <option key={f.name} value={f.name}>{f.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="lg:col-span-2">
+              <span className="mb-1.5 block text-xs font-medium text-bone-faint uppercase tracking-wide">
+                Difficulty
+              </span>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                className="w-full cursor-pointer rounded-lg border border-line bg-ink px-3 py-2.5 text-sm text-bone"
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard, stealthier</option>
+              </select>
+            </label>
+
+            <div className="flex items-end lg:col-span-2">
+              <button
+                type="button"
+                onClick={simulate}
+                disabled={busy || !meta}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold text-ink hover:bg-signal-deep hover:text-bone disabled:opacity-50"
+              >
+                {busy ? <><Spinner /> Scoring</> : <><Play size={15} weight="fill" /> Run attack</>}
+              </button>
             </div>
           </div>
 
-          <div className="lg:col-span-5">
-            <div className="relative aspect-4/5 overflow-hidden rounded-2xl border border-line">
-              <Image
-                src="https://picsum.photos/seed/fraudforge-payment-terminal-dark-desk/900/1125"
-                alt=""
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 40vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-ink via-ink/25 to-transparent" />
-            </div>
-          </div>
-        </section>
-
-        {/* ══ 2. Proof band. Full-width stat row. ═════════════════════ */}
-        <section id="evidence" className="border-y border-line bg-ink-raised">
-          <div className="mx-auto max-w-[1400px] px-5 py-16 lg:px-8 lg:py-20">
-            <Reveal>
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-bone-faint">
-                Measured at seed {BENCH.seed}
-              </p>
-              <div className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-8">
-                <div className="lg:col-span-5">
-                  <p className="font-mono text-6xl font-semibold tracking-tight text-signal lg:text-7xl">
-                    {pct(BENCH.hardenedRecall)}
-                  </p>
-                  <p className="mt-3 max-w-[40ch] text-sm leading-relaxed text-bone-dim">
-                    of synthetic fraud caught, against{" "}
-                    <span className="font-mono text-bone">{pct(BENCH.legacyRecall)}</span> for flat
-                    threshold rules on the same{" "}
-                    {(BENCH.corpusFraud + BENCH.corpusLegit).toLocaleString()} payments.
-                  </p>
+          {target ? (
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                ["Baseline payment", `$${target.baseline.toLocaleString()}`],
+                ["Usual cadence", `${target.daily}/day`],
+                ["Device stability", target.deviceStability],
+                ["Spending regularity", target.regularity],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-lg border border-line bg-ink-raised px-3 py-2.5">
+                  <dt className="text-[11px] text-bone-faint">{k}</dt>
+                  <dd className="font-mono text-sm font-semibold">{v}</dd>
                 </div>
-                <div className="lg:col-span-4">
-                  <p className="font-mono text-6xl font-semibold tracking-tight lg:text-7xl">
-                    {pct(BENCH.hardenedFpr, 2)}
-                  </p>
-                  <p className="mt-3 max-w-[38ch] text-sm leading-relaxed text-bone-dim">
-                    of legitimate payments wrongly flagged, down from{" "}
-                    <span className="font-mono text-bone">{pct(BENCH.legacyFpr, 2)}</span>. More
-                    fraud caught and less friction, not a trade between them.
-                  </p>
-                </div>
-                <div className="lg:col-span-3">
-                  <p className="font-mono text-6xl font-semibold tracking-tight lg:text-7xl">
-                    $343k
-                  </p>
-                  <p className="mt-3 max-w-[34ch] text-sm leading-relaxed text-bone-dim">
-                    of {money(BENCH.fraudValue)} in fraud value stopped that flat rules let
-                    through. Inside this corpus, not a projection.
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ══ 3. Problem. Editorial text, no image. ═══════════════════ */}
-        <section className="mx-auto max-w-[1400px] px-5 py-20 lg:px-8 lg:py-28">
-          <Reveal>
-            <h2 className="max-w-[19ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-              Static rules only catch fraud they have already seen
-            </h2>
-            <div className="mt-10 grid gap-8 lg:grid-cols-2 lg:gap-16">
-              <p className="text-lg leading-relaxed text-bone-dim">
-                A flat limit does not know your customer. It fires at five thousand
-                dollars whether the account normally spends eighty or eight thousand. An
-                attacker who reads the account first simply stays underneath it, and
-                every payment looks ordinary on its own.
-              </p>
-              <p className="text-lg leading-relaxed text-bone-dim">
-                Generative tools made that reconnaissance cheap. The lure, the voice, the
-                invoice thread and the pacing can all be tailored to one person now. The
-                defence has to be tailored too, or it is grading every account against a
-                stranger.
-              </p>
-            </div>
-          </Reveal>
-        </section>
-
-        {/* ══ 4. Pipeline. Staggered vertical sequence. ═══════════════ */}
-        <section id="loop" className="border-t border-line bg-ink-sunken">
-          <div className="mx-auto max-w-[1400px] px-5 py-20 lg:px-8 lg:py-28">
-            <Reveal>
-              <h2 className="max-w-[16ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-                The attacker moves first, on purpose
-              </h2>
-            </Reveal>
-
-            <RevealGroup className="mt-14">
-              {PIPELINE.map((step, i) => (
-                <RevealItem key={step.verb}>
-                  <div
-                    className="grid gap-3 border-t border-line py-7 lg:grid-cols-12 lg:gap-8"
-                    style={{ paddingLeft: `${i * 1.4}rem` }}
-                  >
-                    <h3 className="font-mono text-xl font-semibold tracking-tight text-signal lg:col-span-3">
-                      {step.verb}
-                    </h3>
-                    <p className="max-w-[62ch] text-base leading-relaxed text-bone-dim lg:col-span-9">
-                      {step.body}
-                    </p>
-                  </div>
-                </RevealItem>
               ))}
-            </RevealGroup>
-          </div>
-        </section>
-
-        {/* ══ 5. Rounds. Data table. ══════════════════════════════════ */}
-        <section className="mx-auto max-w-[1400px] px-5 py-20 lg:px-8 lg:py-28">
-          <Reveal>
-            <h2 className="max-w-[22ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-              Recall climbs because the misses become training data
-            </h2>
-            <p className="mt-5 max-w-[62ch] text-base leading-relaxed text-bone-dim">
-              Three passes against one held-out split that never changes, so the rows are
-              comparable. Precision falls as recall rises. That is the real cost of
-              catching quieter fraud, and hiding it would make the rest of this page less
-              believable.
-            </p>
-
-            <div className="mt-12 overflow-x-auto">
-              <table className="w-full min-w-[640px] border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-line-bright">
-                    <th className="py-4 pr-6 text-sm font-medium text-bone-faint">Pass</th>
-                    <th className="py-4 pr-6 text-right text-sm font-medium text-bone-faint">Recall</th>
-                    <th className="py-4 pr-6 text-right text-sm font-medium text-bone-faint">Precision</th>
-                    <th className="py-4 pr-6 text-right text-sm font-medium text-bone-faint">AUC</th>
-                    <th className="py-4 text-sm font-medium text-bone-faint">What changed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ROUNDS.map((r) => (
-                    <tr key={r.name} className="border-b border-line align-top">
-                      <td className="py-5 pr-6 font-medium">{r.name}</td>
-                      <td className="py-5 pr-6 text-right font-mono text-signal">{pct(r.recall)}</td>
-                      <td className="py-5 pr-6 text-right font-mono text-bone-dim">{pct(r.precision)}</td>
-                      <td className="py-5 pr-6 text-right font-mono text-bone-dim">{r.auc.toFixed(3)}</td>
-                      <td className="max-w-[38ch] py-5 text-sm leading-relaxed text-bone-dim">
-                        {r.note}
-                        {r.mined ? (
-                          <span className="text-bone-faint"> {r.mined} payments folded in.</span>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Reveal>
-        </section>
-
-        {/* ══ 6. Vectors. Bento, exactly six cells for six vectors. ═══ */}
-        <section id="vectors" className="border-t border-line bg-ink-raised">
-          <div className="mx-auto max-w-[1400px] px-5 py-20 lg:px-8 lg:py-28">
-            <Reveal>
-              <h2 className="max-w-[20ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-                Six ways in, all of them synthetic
-              </h2>
-            </Reveal>
-
-            <RevealGroup className="mt-14 grid gap-4 lg:grid-cols-6">
-              {VECTORS.map((v) => (
-                <RevealItem key={v.name} className={v.span}>
-                  <Lift className="h-full">
-                    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-ink">
-                      {v.img ? (
-                        <div className="relative w-full" style={{ height: v.h }}>
-                          <Image
-                            src={`https://picsum.photos/seed/${v.img}/1000/600`}
-                            alt=""
-                            fill
-                            sizes="(max-width: 1024px) 100vw, 50vw"
-                            className="object-cover opacity-70"
-                          />
-                          <div className="absolute inset-0 bg-linear-to-t from-ink to-transparent" />
-                        </div>
-                      ) : null}
-                      <div className="flex flex-1 flex-col gap-2.5 p-6">
-                        <v.Icon size={20} weight="duotone" className="text-signal" />
-                        <h3 className="text-lg font-semibold tracking-tight">{v.name}</h3>
-                        <p className="text-sm leading-relaxed text-bone-dim">{v.body}</p>
-                      </div>
-                    </article>
-                  </Lift>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          </div>
-        </section>
-
-        {/* ══ 7. Ledger. Image and text split, first of two. ══════════ */}
-        <section className="mx-auto max-w-[1400px] px-5 py-20 lg:px-8 lg:py-28">
-          <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
-            <Reveal className="lg:col-span-6">
-              <div className="relative aspect-16/11 overflow-hidden rounded-2xl border border-line">
-                <Image
-                  src="https://picsum.photos/seed/fraudforge-audit-ledger-paper-desk/1200/825"
-                  alt=""
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover opacity-80"
-                />
-              </div>
-            </Reveal>
-            <Reveal delay={0.08} className="lg:col-span-6">
-              <h2 className="max-w-[18ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-                Every verdict shows its working
-              </h2>
-              <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-bone-dim">
-                Each payment carries the reasons behind its score: how far above the
-                account baseline, how many payments that hour, whether the payee is new.
-                Both detectors are shown side by side, so a disagreement points straight
-                at the signal that caused it.
-              </p>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ══ 8. Export. Split reversed. Second and last in a row. ════ */}
-        <section className="mx-auto max-w-[1400px] px-5 pb-20 lg:px-8 lg:pb-28">
-          <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
-            <Reveal className="lg:order-2 lg:col-span-6">
-              <div className="relative aspect-16/11 overflow-hidden rounded-2xl border border-line">
-                <Image
-                  src="https://picsum.photos/seed/fraudforge-printed-report-documents/1200/825"
-                  alt=""
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover opacity-80"
-                />
-              </div>
-            </Reveal>
-            <Reveal delay={0.08} className="lg:order-1 lg:col-span-6">
-              <h2 className="max-w-[18ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-                One incident, start to finish
-              </h2>
-              <p className="mt-6 max-w-[58ch] text-lg leading-relaxed text-bone-dim">
-                Who was targeted, why that attack was chosen, what was sent, what each
-                detector said, what got through, and what the model learned from it.
-                Written in a single pass so no section drifts out of step with the
-                numbers, and exportable as a Word file or a PDF.
-              </p>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ══ 9. Limits. Three-column editorial, breaks the rhythm. ═══ */}
-        <section id="limits" className="border-y border-line bg-ink-sunken">
-          <div className="mx-auto max-w-[1400px] px-5 py-20 lg:px-8 lg:py-28">
-            <Reveal>
-              <h2 className="max-w-[24ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-                What this does not claim
-              </h2>
-              <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-12">
-                <div>
-                  <h3 className="text-lg font-semibold">The data is synthetic</h3>
-                  <p className="mt-3 text-base leading-relaxed text-bone-dim">
-                    No real customer, payment or account appears anywhere in this system.
-                    The population is generated, and so is every attack run against it.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">The gains are modest</h3>
-                  <p className="mt-3 text-base leading-relaxed text-bone-dim">
-                    Recall roughly doubles against flat rules. It does not reach the
-                    numbers a pitch deck would prefer, and precision gives ground as it
-                    climbs.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Value is not projected</h3>
-                  <p className="mt-3 text-base leading-relaxed text-bone-dim">
-                    Recovered value is measured inside one labelled corpus. Turning that
-                    into an annual saving would need production volumes this project does
-                    not have.
-                  </p>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ══ 10. Closing call to action. ════════════════════════════ */}
-        <section className="mx-auto max-w-[1400px] px-5 py-24 lg:px-8 lg:py-32">
-          <Reveal className="text-center">
-            <h2 className="mx-auto max-w-[20ch] text-4xl font-semibold leading-[1.1] tracking-tight lg:text-5xl">
-              Run an attack and watch it get scored
-            </h2>
-            <p className="mx-auto mt-5 max-w-[52ch] text-lg text-bone-dim">
-              Every figure is computed when you load it. Nothing in the demo is a stored
-              result.
-            </p>
-            <a
-              href={APP_URL}
-              data-cta
-              className="mt-9 inline-flex items-center gap-2 rounded-lg bg-signal px-6 py-3.5 text-sm font-semibold text-ink hover:bg-signal-deep hover:text-bone"
-            >
-              Open the demo
-              <ArrowUpRight size={16} weight="bold" />
-            </a>
-          </Reveal>
-        </section>
-      </main>
-
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-5 py-10 text-sm text-bone-faint sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <p>
-            FraudForge. Synthetic data only, built for the Mastercard Innovation
-            Challenge 2026.
-          </p>
-          <a href={APP_URL} className="text-bone-dim transition-colors hover:text-bone">
-            fraud-forge-nine.vercel.app
-          </a>
+            </dl>
+          ) : null}
         </div>
-      </footer>
-    </>
+
+        {run ? (
+          <>
+            {/* ── Headline result ─────────────────────────────────── */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Stat label="Payments sent" value={run.comparison.total} note={money(run.comparison.valueTotal)} />
+              <Stat
+                label="Hardened caught"
+                value={`${run.comparison.hardenedCaught}/${run.comparison.total}`}
+                note={pct(run.defence.detectionRate)}
+                tone="signal"
+              />
+              <Stat
+                label="Legacy caught"
+                value={`${run.comparison.legacyCaught}/${run.comparison.total}`}
+                note={pct(run.comparison.legacyDetectionRate)}
+                tone="fail"
+              />
+              <Stat
+                label="Value through"
+                value={money(run.comparison.valueThrough)}
+                note={`${run.defence.evaded} payments evaded`}
+                tone="warn"
+              />
+            </div>
+
+            {/* ── Plan ────────────────────────────────────────────── */}
+            <Panel
+              title={`Planner chose ${run.plan.label}`}
+              description={run.plan.rationale}
+            >
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(run.plan.candidates)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([name, score]) => (
+                    <span
+                      key={name}
+                      className={`rounded-lg border px-2.5 py-1 font-mono text-[11px] ${
+                        name === run.plan.attackType
+                          ? "border-signal/40 bg-signal/12 text-signal"
+                          : "border-line bg-ink text-bone-dim"
+                      }`}
+                    >
+                      {name.replace(/_/g, " ")} {score}
+                    </span>
+                  ))}
+              </div>
+            </Panel>
+
+            {/* ── Ledger ──────────────────────────────────────────── */}
+            <Panel
+              title="Payment-by-payment ledger"
+              description="Click any row to inspect why it scored the way it did. Both detector verdicts are shown side by side."
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs text-bone-faint">
+                      <th className="pb-2 pr-4 font-medium">#</th>
+                      <th className="pb-2 pr-4 font-medium">Amount</th>
+                      <th className="pb-2 pr-4 text-right font-medium">vs base</th>
+                      <th className="pb-2 pr-4 text-right font-medium">Vel</th>
+                      <th className="pb-2 pr-4 text-right font-medium">Risk</th>
+                      <th className="pb-2 pr-4 font-medium">Hardened</th>
+                      <th className="pb-2 font-medium">Legacy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {run.records.map((r, i) => (
+                      <tr
+                        key={r.id}
+                        onClick={() => setSelected(i)}
+                        className={`cursor-pointer border-b border-line/60 transition-colors ${
+                          i === selected ? "bg-signal/8" : "hover:bg-ink"
+                        }`}
+                      >
+                        <td className="py-2.5 pr-4 font-mono text-bone-faint">{r.step}</td>
+                        <td className="py-2.5 pr-4 font-mono font-semibold">${r.amount.toLocaleString()}</td>
+                        <td className="py-2.5 pr-4 text-right font-mono text-bone-dim">{r.amountRatio}x</td>
+                        <td className="py-2.5 pr-4 text-right font-mono text-bone-dim">{r.velocity}</td>
+                        <td className="py-2.5 pr-4 text-right font-mono font-semibold">{r.riskScore.toFixed(2)}</td>
+                        <td className="py-2.5 pr-4"><Verdict action={r.action} /></td>
+                        <td className="py-2.5"><Verdict action={r.legacyFlagged ? "FLAG" : "MISS"} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+
+            {/* ── Why this payment scored ─────────────────────────── */}
+            {active ? (
+              <Panel
+                title={`Why payment ${active.step} scored ${active.riskScore.toFixed(2)}`}
+                description={active.explanation}
+              >
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div>
+                    <p className="mb-3 text-xs font-medium text-bone-faint uppercase tracking-wide">
+                      Signal contributions
+                    </p>
+                    <div className="space-y-2">
+                      {Object.entries(active.contributions).length === 0 ? (
+                        <p className="text-xs text-bone-dim">No signal cleared its reporting floor.</p>
+                      ) : (
+                        Object.entries(active.contributions)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([k, v]) => (
+                            <div key={k} className="flex items-center gap-3 text-xs">
+                              <span className="w-32 shrink-0 capitalize text-bone-dim">
+                                {k.replace(/_/g, " ")}
+                              </span>
+                              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink">
+                                <span
+                                  className="block h-full rounded-full bg-signal"
+                                  style={{ width: `${Math.min(100, (v / 0.35) * 100)}%` }}
+                                />
+                              </span>
+                              <span className="w-12 shrink-0 text-right font-mono font-semibold text-signal">
+                                +{v.toFixed(2)}
+                              </span>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <p className="mb-1.5 font-medium text-bone-faint uppercase tracking-wide">
+                        Hardened scorer
+                      </p>
+                      <ul className="space-y-1 text-bone-dim">
+                        {active.reasons.map((r) => <li key={r}>· {r}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="mb-1.5 font-medium text-bone-faint uppercase tracking-wide">
+                        Legacy rules
+                      </p>
+                      <ul className="space-y-1 text-bone-dim">
+                        {active.legacyReasons.map((r) => <li key={r}>· {r}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* ── Benchmark ───────────────────────────────────────────── */}
+        <Panel
+          title="Measured detector comparison"
+          description="Both detectors run over one labelled corpus of synthetic fraud and legitimate traffic. These are the resulting confusion-matrix figures, computed per request."
+          action={
+            <button
+              type="button"
+              onClick={runBenchmark}
+              disabled={benchBusy}
+              className="flex items-center gap-2 rounded-lg border border-line bg-ink px-3.5 py-2 text-xs font-semibold hover:border-bone-faint disabled:opacity-50"
+            >
+              {benchBusy ? <><Spinner /> Evaluating</> : <><ArrowsClockwise size={14} weight="bold" /> {bench ? "Re-run" : "Run benchmark"}</>}
+            </button>
+          }
+        >
+          {bench ? (
+            <div className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Stat label="Legacy recall" value={pct(bench.legacy.recall)} note={`${bench.legacy.truePositives} of ${bench.legacy.truePositives + bench.legacy.falseNegatives} caught`} tone="fail" />
+                <Stat label="Hardened recall" value={pct(bench.hardened.recall)} note={`${pct(bench.recallDelta)} better`} tone="signal" />
+                <Stat label="Added false positives" value={pct(bench.frictionDelta, 2)} note={`legacy ${pct(bench.legacy.falsePositiveRate, 2)}, hardened ${pct(bench.hardened.falsePositiveRate, 2)}`} tone={bench.frictionDelta > 0 ? "warn" : "signal"} />
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs text-bone-faint">
+                      <th className="pb-2 pr-4 font-medium">Detector</th>
+                      <th className="pb-2 pr-4 text-right font-medium">Recall</th>
+                      <th className="pb-2 pr-4 text-right font-medium">Precision</th>
+                      <th className="pb-2 pr-4 text-right font-medium">F1</th>
+                      <th className="pb-2 text-right font-medium">False positive rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[["Legacy static rules", bench.legacy], ["Hardened per-account scorer", bench.hardened]].map(
+                      ([name, m]) => (
+                        <tr key={name} className="border-b border-line/60">
+                          <td className="py-2.5 pr-4 font-medium">{name}</td>
+                          <td className="py-2.5 pr-4 text-right font-mono">{pct(m.recall)}</td>
+                          <td className="py-2.5 pr-4 text-right font-mono">{pct(m.precision)}</td>
+                          <td className="py-2.5 pr-4 text-right font-mono">{pct(m.f1)}</td>
+                          <td className="py-2.5 text-right font-mono">{pct(m.falsePositiveRate, 2)}</td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-xs leading-relaxed text-bone-faint">
+                Corpus: {bench.corpus.fraudulent.toLocaleString()} synthetic fraudulent and{" "}
+                {bench.corpus.legitimate.toLocaleString()} legitimate payments, seed {bench.seed}.
+                Legacy is {bench.provenance.legacy}. The flat rules almost never fire on ordinary
+                traffic in this population, so the hardened scorer buys a large recall gain for a
+                small amount of added friction rather than for free. Recovered value,{" "}
+                {money(bench.recoveredValue)} of {money(bench.corpus.fraudValue)}, is fraud the
+                hardened scorer stops and the flat rules do not, inside this corpus only. It is not
+                a monthly projection.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-bone-dim">
+              Run the benchmark to score several hundred payments through both detectors.
+            </p>
+          )}
+        </Panel>
+      </div>
+    </Shell>
   );
 }
