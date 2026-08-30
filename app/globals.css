@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   FraudForge site tokens
+
+   One theme, locked dark (Section 4.11). One accent, locked emerald
+   (Section 4.2 Color Consistency Lock). Neutral base is zinc, never pure
+   black and never pure white (Section 8.B).
+
+   Shape scale, three tiers only (Section 4.4 Shape Consistency Lock):
+     rounded-full   pills and badges
+     rounded-lg     controls: buttons, inputs, small tiles
+     rounded-2xl    containers: cards, panels, media
+   ========================================================================== */
+
+@theme {
+  --color-ink: #0a0a0b;
+  --color-ink-raised: #121214;
+  --color-ink-sunken: #08080a;
+  --color-line: #232327;
+  --color-line-bright: #34343a;
+
+  --color-bone: #f4f4f5;
+  --color-bone-dim: #a1a1aa;
+  --color-bone-faint: #71717a;
+
+  --color-signal: #34d399;
+  --color-signal-deep: #059669;
+  --color-warn: #fb923c;
+  --color-fail: #f87171;
+}
+
+html {
+  background-color: var(--color-ink);
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-bone);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Tactile press feedback (Section 4.5). Transform only, so it stays on the
+   compositor. Collapses under reduced motion below. */
+button:not(:disabled):active,
+a[data-cta]:active {
+  transform: scale(0.985);
+}
+
+button,
+a[data-cta] {
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+/* Fine grain over the whole page. Fixed and pointer-events-none so it never
+   repaints on scroll (Section 6.E). */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  button:not(:disabled):active,
+  a[data-cta]:active {
+    transform: none;
+  }
+}
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
