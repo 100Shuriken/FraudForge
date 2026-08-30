@@ -1,0 +1,139 @@
+"use client";
+
+import { Shell, Panel, PageHead } from "@/components/shell";
+import { TAXONOMY_STATS } from "@/lib/taxonomy";
+
+const LOOP = [
+  ["Identify", "Map the attack surface. 28 vectors across 6 categories, 17 rails and 24 surfaces, each carrying the generator parameters that make it reproducible."],
+  ["Generate", "Synthesise a payment sequence shaped to the chosen vector against a specific account. Amounts and velocity interpolate across the sequence, so a burst front-loads risk and pacing back-loads it."],
+  ["Score", "Run every step past two detectors: flat threshold rules, and a scorer grading each signal against the account's own baseline."],
+  ["Mine", "Collect the payments that cleared the review line. Those false negatives are the training data."],
+  ["Defend", "Fold the misses into training and re-measure on a held-out split that never changes, so rounds stay comparable."],
+  ["Feed back", "Vectors that still evade become the next round's attack ideas, which closes the loop rather than ending it."],
+];
+
+const CLAIMS = [
+  {
+    title: "What is measured",
+    tone: "signal",
+    points: [
+      "Every rate is computed from a confusion matrix at request time. Nothing on this site is a stored constant.",
+      "The three training rounds share one fixed held-out split, so recall across rounds is directly comparable.",
+      "Detection and evasion always total 100% because both derive from the same scored records.",
+      "Seeds are printed wherever they matter. Pinning a seed reproduces a run exactly.",
+    ],
+  },
+  {
+    title: "What is not claimed",
+    tone: "warn",
+    points: [
+      "All data is synthetic. No real customer, payment, account or institution is represented.",
+      "The hardened scorer is a graded rule engine, not a deep model. Explainable by construction, which is the point, but not state of the art.",
+      "Recovered value is measured inside one labelled corpus. It is not an annual saving and not a projection.",
+      "The population is 10 accounts. Results would move on a real portfolio.",
+    ],
+  },
+  {
+    title: "Known weaknesses",
+    tone: "fail",
+    points: [
+      "Targeted feature suppression scores near-zero detection. An attacker who holds every signal just under its own trigger defeats this scorer, and the sweep shows it rather than hiding it.",
+      "The flat baseline almost never fires on ordinary traffic here, so the hardened scorer buys recall at a small friction cost, not for free.",
+      "Precision falls as recall climbs across the training rounds. That trade is real and shown.",
+      "The attack generator and the scorer share an author, so the generator is not an independent adversary.",
+    ],
+  },
+];
+
+const FEASIBILITY = [
+  ["Where it would sit", "Shadow mode alongside an existing rule engine, scoring the same stream without touching authorisation, so disagreement can be measured before anything is enforced."],
+  ["What it needs", "Per-account baselines: usual amount, cadence, device and payee history. Most processors already compute these for other purposes."],
+  ["What breaks first", "Base rate. At realistic prevalence, precision collapses. The Sandbox demonstrates this directly, and it is the single most common way a fraud model looks strong in evaluation and fails in operation."],
+  ["Why explainable matters", "Every score decomposes into named contributions. A step-up challenge a bank cannot justify to a regulator or a customer is not deployable, whatever its AUC."],
+];
+
+const STACK = [
+  ["Scoring", "Graded rule engine. Each signal contributes proportionally to deviation from the account baseline."],
+  ["Legacy baseline", "Static thresholds: amount over $5,000, or six payments per hour. No per-account context."],
+  ["Defender model", "Logistic regression, gradient descent, class-weighted for the minority class, L2 regularised."],
+  ["Evaluation", "Confusion matrix plus rank-based AUC, equivalent to the Mann-Whitney U statistic."],
+  ["Determinism", "mulberry32 seeded PRNG. Every run reproducible from its printed seed."],
+  ["Runtime", "Next.js route handlers. No Python, no external service, no database, no API keys."],
+];
+
+export default function Method() {
+  return (
+    <Shell>
+      <div className="space-y-6">
+        <PageHead kicker="Evidence" title="How it works, and what it does not claim">
+          The honest version. What the loop does step by step, which numbers are measured,
+          where the approach is weak, and what deploying it would actually involve.
+        </PageHead>
+
+        <Panel title="The closed loop" description="The order the engine executes.">
+          <div className="space-y-px">
+            {LOOP.map(([verb, body], i) => (
+              <div key={verb} className="rule grid gap-3 py-4 lg:grid-cols-12 lg:gap-6"
+                style={{ paddingLeft: `${i * 1.1}rem` }}>
+                <h3 className="font-mono text-sm font-bold tracking-wide uppercase text-signal lg:col-span-3">
+                  {verb}
+                </h3>
+                <p className="max-w-[74ch] text-sm leading-relaxed text-bone-dim lg:col-span-9">{body}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          {CLAIMS.map((c) => (
+            <section key={c.title}
+              className={`slab p-5 ${
+                c.tone === "signal" ? "border-signal/50" : c.tone === "warn" ? "border-warn/50" : "border-fail/50"
+              }`}>
+              <h2 className={`font-mono text-[11px] font-bold tracking-wider uppercase ${
+                c.tone === "signal" ? "text-signal" : c.tone === "warn" ? "text-warn" : "text-fail"
+              }`}>
+                {c.title}
+              </h2>
+              <ul className="mt-4 space-y-3">
+                {c.points.map((p) => (
+                  <li key={p} className="text-xs leading-relaxed text-bone-dim">{p}</li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+
+        <Panel title="Real-world feasibility" description="What it would take to run this against live payments.">
+          <div className="grid gap-4 md:grid-cols-2">
+            {FEASIBILITY.map(([k, v]) => (
+              <div key={k} className="slab p-4">
+                <p className="font-mono text-[11px] font-bold tracking-wide uppercase text-bone">{k}</p>
+                <p className="mt-2 text-xs leading-relaxed text-bone-dim">{v}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Stack">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <tbody>
+                {STACK.map(([k, v]) => (
+                  <tr key={k} className="border-b border-line/60 align-top">
+                    <td className="w-44 py-3 pr-6 font-mono text-[11px] font-bold tracking-wide uppercase">{k}</td>
+                    <td className="py-3 text-sm leading-relaxed text-bone-dim">{v}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 font-mono text-[10px] text-bone-faint">
+            Taxonomy: {TAXONOMY_STATS.vectors} vectors, {TAXONOMY_STATS.rails.length} rails,{" "}
+            {TAXONOMY_STATS.surfaces.length} surfaces. All generatable, all scored by the same engine.
+          </p>
+        </Panel>
+      </div>
+    </Shell>
+  );
+}

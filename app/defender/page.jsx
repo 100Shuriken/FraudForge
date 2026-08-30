@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Play } from "@phosphor-icons/react";
-import { Shell, Panel, Stat, Spinner, ErrorNote, pct } from "@/components/shell";
+import { Shell, Panel, Stat, Spinner, ErrorNote, PageHead, Bar, pct } from "@/components/shell";
 
 export default function Defender() {
   const [result, setResult] = useState(null);
@@ -37,26 +37,19 @@ export default function Defender() {
       <div className="space-y-6">
         <ErrorNote>{error}</ErrorNote>
 
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight lg:text-3xl">
-              Adversarial retraining loop
-            </h1>
-            <p className="mt-2 max-w-[76ch] text-sm leading-relaxed text-bone-dim">
-              Three passes of a class-weighted logistic regression. Each pass mines the
-              payments the previous model missed and retrains on them, against a held-out
-              split that never changes, so the rows stay comparable.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={run}
-            disabled={busy}
-            className="flex items-center gap-2 rounded-lg bg-signal px-5 py-2.5 text-sm font-semibold text-ink hover:bg-signal-deep hover:text-bone disabled:opacity-50"
-          >
-            {busy ? <><Spinner /> Training</> : <><Play size={15} weight="fill" /> Run three rounds</>}
-          </button>
-        </div>
+        <PageHead
+          kicker="Pillar 3 · Defend"
+          title="The misses become the training data"
+          action={
+            <button type="button" onClick={run} disabled={busy} className="btn btn-primary">
+              {busy ? <><Spinner /> Training</> : <><Play size={14} weight="fill" /> Run three rounds</>}
+            </button>
+          }
+        >
+          A class-weighted logistic regression trained three times. Each pass mines the payments
+          the previous model let through and retrains on them, measured against a held-out split
+          that never changes so the rounds stay comparable. Every run draws a fresh seed.
+        </PageHead>
 
         {result ? (
           <>
@@ -69,28 +62,28 @@ export default function Defender() {
 
             <Panel title="Round by round" description="One fixed test split across all three rounds.">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-[760px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-line text-xs text-bone-faint">
-                      <th className="pb-2 pr-4 font-medium">Pass</th>
-                      <th className="pb-2 pr-4 text-right font-medium">Recall</th>
-                      <th className="pb-2 pr-4 text-right font-medium">Precision</th>
-                      <th className="pb-2 pr-4 text-right font-medium">F1</th>
-                      <th className="pb-2 pr-4 text-right font-medium">AUC</th>
-                      <th className="pb-2 pr-4 text-right font-medium">Mined</th>
-                      <th className="pb-2 font-medium">What changed</th>
+                    <tr className="border-b-2 border-line">
+                      <th className="tag pr-4 pb-2">Pass</th>
+                      <th className="tag pr-4 pb-2 text-right">Recall</th>
+                      <th className="tag pr-4 pb-2 text-right">Precision</th>
+                      <th className="tag pr-4 pb-2 text-right">F1</th>
+                      <th className="tag pr-4 pb-2 text-right">AUC</th>
+                      <th className="tag pr-4 pb-2 text-right">Mined</th>
+                      <th className="tag pb-2">What changed</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rounds.map((r) => (
                       <tr key={r.round} className="border-b border-line/60 align-top">
                         <td className="py-3 pr-4 font-medium">{r.name}</td>
-                        <td className="py-3 pr-4 text-right font-mono font-semibold text-signal">{pct(r.recall)}</td>
+                        <td className="py-3 pr-4 text-right font-mono font-bold text-signal">{pct(r.recall)}</td>
                         <td className="py-3 pr-4 text-right font-mono text-bone-dim">{pct(r.precision)}</td>
                         <td className="py-3 pr-4 text-right font-mono text-bone-dim">{pct(r.f1)}</td>
                         <td className="py-3 pr-4 text-right font-mono text-bone-dim">{r.auc.toFixed(3)}</td>
                         <td className="py-3 pr-4 text-right font-mono text-bone-dim">{r.mined || "-"}</td>
-                        <td className="py-3 max-w-[40ch] text-xs leading-relaxed text-bone-dim">{r.description}</td>
+                        <td className="py-3 max-w-[38ch] text-xs leading-relaxed text-bone-dim">{r.description}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -98,7 +91,7 @@ export default function Defender() {
               </div>
             </Panel>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Panel title="What the final model leans on" description="Normalised absolute weights.">
                 <div className="space-y-2.5">
                   {Object.entries(result.featureImportance)
@@ -106,10 +99,8 @@ export default function Defender() {
                     .map(([k, v]) => (
                       <div key={k} className="flex items-center gap-3 text-xs">
                         <span className="w-44 shrink-0 text-bone-dim">{result.featureLabels[k]}</span>
-                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink">
-                          <span className="block h-full rounded-full bg-signal" style={{ width: `${v * 100 * 2.5}%` }} />
-                        </span>
-                        <span className="w-12 shrink-0 text-right font-mono font-semibold">{v.toFixed(3)}</span>
+                        <Bar value={v} max={0.4} />
+                        <span className="w-12 shrink-0 text-right font-mono font-bold">{v.toFixed(3)}</span>
                       </div>
                     ))}
                 </div>
@@ -120,7 +111,7 @@ export default function Defender() {
               </Panel>
             </div>
 
-            <p className="text-xs leading-relaxed text-bone-faint">
+            <p className="rule pt-4 font-mono text-[10px] leading-relaxed text-bone-faint">
               {result.provenance.model}. Decision threshold {result.provenance.threshold}.{" "}
               {result.provenance.note} Corpus: {result.corpus.legitimate} legitimate,{" "}
               {result.corpus.easyFraud + result.corpus.evasiveFraud + result.corpus.hardFraud} fraudulent.
@@ -129,9 +120,9 @@ export default function Defender() {
           </>
         ) : (
           !busy && (
-            <div className="rounded-2xl border border-dashed border-line p-12 text-center">
-              <p className="text-sm font-medium">No training run yet</p>
-              <p className="mt-1 text-xs text-bone-dim">
+            <div className="slab border-dashed p-12 text-center">
+              <p className="font-mono text-sm font-bold">No training run yet</p>
+              <p className="mt-1.5 text-xs text-bone-dim">
                 Each run draws a fresh seed, so the numbers move between runs.
               </p>
             </div>

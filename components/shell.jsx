@@ -2,133 +2,211 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crosshair, ShieldCheck, FileText } from "@phosphor-icons/react";
+import {
+  Crosshair, MagnifyingGlass, Lightning, ShieldCheck,
+  SlidersHorizontal, FileText, Notebook,
+} from "@phosphor-icons/react";
 
 const NAV = [
-  { href: "/", label: "Live cockpit", Icon: Crosshair },
-  { href: "/defender", label: "Defender", Icon: ShieldCheck },
-  { href: "/report", label: "Incident report", Icon: FileText },
+  { href: "/", label: "Cockpit", pillar: "Loop", Icon: Crosshair },
+  { href: "/identify", label: "Identify", pillar: "Pillar 1", Icon: MagnifyingGlass },
+  { href: "/generate", label: "Generate", pillar: "Pillar 2", Icon: Lightning },
+  { href: "/defender", label: "Defend", pillar: "Pillar 3", Icon: ShieldCheck },
+  { href: "/sandbox", label: "Sandbox", pillar: "Analysis", Icon: SlidersHorizontal },
+  { href: "/report", label: "Report", pillar: "Evidence", Icon: FileText },
+  { href: "/method", label: "Method", pillar: "Evidence", Icon: Notebook },
 ];
 
 export function Shell({ children }) {
   const path = usePathname();
+  const current = NAV.find((n) => n.href === path);
 
   return (
-    <div className="min-h-[100dvh]">
-      <header className="sticky top-0 z-50 border-b border-line bg-ink/90 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-6 px-5 lg:px-8">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-signal">
-              <span className="h-2.5 w-2.5 rounded-full bg-ink" />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">FraudForge</span>
-          </Link>
-
-          <div className="flex items-center gap-1">
-            {NAV.map(({ href, label, Icon }) => {
-              const active = path === href;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                    active
-                      ? "bg-signal/12 text-signal"
-                      : "text-bone-dim hover:bg-ink-raised hover:text-bone"
-                  }`}
-                >
-                  <Icon size={16} weight="bold" />
-                  <span className="hidden sm:inline">{label}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          <span className="hidden shrink-0 items-center gap-2 text-xs text-bone-faint lg:flex">
-            Synthetic data only
+    <div className="min-h-[100dvh] lg:flex">
+      {/* ── Rail. Liquid glass, the one place translucency earns itself. ── */}
+      <aside className="glass-rail sticky top-0 z-40 hidden h-[100dvh] w-52 shrink-0 flex-col lg:flex">
+        <Link href="/" className="flex items-center gap-2.5 border-b-2 border-line px-4 py-4">
+          <span className="grid h-7 w-7 shrink-0 place-items-center bg-signal">
+            <span className="h-2.5 w-2.5 bg-void" />
           </span>
+          <span className="font-mono text-[13px] leading-none font-bold tracking-tight">
+            FRAUDFORGE
+          </span>
+        </Link>
+
+        <nav className="flex-1 overflow-y-auto p-2">
+          {NAV.map(({ href, label, pillar, Icon }) => {
+            const active = path === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`mb-0.5 flex items-center gap-2.5 border-2 px-2.5 py-2 transition-colors ${
+                  active
+                    ? "border-signal bg-signal/10 text-signal"
+                    : "border-transparent text-bone-dim hover:border-line hover:bg-ink-raised hover:text-bone"
+                }`}
+              >
+                <Icon size={15} weight="bold" className="shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-mono text-[11px] leading-none font-bold tracking-wide uppercase">
+                    {label}
+                  </span>
+                  <span className="mt-1 block text-[9px] leading-none text-bone-faint">{pillar}</span>
+                </span>
+              </Link>
+            );
+          })}
         </nav>
-      </header>
 
-      <main className="mx-auto max-w-[1400px] px-5 py-8 lg:px-8 lg:py-12">{children}</main>
-
-      <footer className="border-t border-line">
-        <div className="mx-auto max-w-[1400px] px-5 py-8 text-sm text-bone-faint lg:px-8">
-          FraudForge. Every figure is computed on request from synthetic data. No real
-          customer, payment or account is represented anywhere in this system.
+        <div className="border-t-2 border-line px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="pulse-dot" />
+            <span className="tag">Synthetic only</span>
+          </div>
         </div>
-      </footer>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* ── Mobile bar ─────────────────────────────────────────────── */}
+        <header className="glass sticky top-0 z-50 lg:hidden">
+          <div className="flex h-14 items-center gap-3 px-3">
+            <Link href="/" className="flex shrink-0 items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center bg-signal">
+                <span className="h-2 w-2 bg-void" />
+              </span>
+            </Link>
+            <nav className="flex items-center gap-1 overflow-x-auto">
+              {NAV.map(({ href, label, Icon }) => {
+                const active = path === href;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex shrink-0 items-center gap-1.5 border-2 px-2 py-1.5 font-mono text-[10px] font-bold tracking-wide uppercase whitespace-nowrap ${
+                      active ? "border-signal bg-signal/10 text-signal" : "border-line text-bone-dim"
+                    }`}
+                  >
+                    <Icon size={12} weight="bold" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </header>
+
+        {/* ── Desktop context bar ────────────────────────────────────── */}
+        <header className="glass sticky top-0 z-30 hidden lg:block">
+          <div className="flex h-11 items-center justify-between px-6">
+            <p className="font-mono text-[11px] text-bone-faint">
+              Mastercard Innovation Challenge <span className="text-line">/</span> GFF 2026{" "}
+              <span className="text-line">/</span>{" "}
+              <span className="font-bold text-bone">{current?.label || "Cockpit"}</span>
+            </p>
+            <p className="tag">Closed-loop red team, blue team</p>
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-8 lg:px-8 lg:py-10">{children}</main>
+
+        <footer className="mt-auto border-t-2 border-line">
+          <div className="mx-auto max-w-[1440px] px-4 py-6 font-mono text-[10px] leading-relaxed text-bone-faint lg:px-8">
+            Every figure is computed on request. No real customer, payment or account is
+            represented anywhere in this system.
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
 
-/* ---- Small shared pieces ------------------------------------------------ */
+/* ---- Shared pieces ------------------------------------------------------ */
 
 export function Stat({ label, value, note, tone }) {
-  const toneClass =
-    { signal: "text-signal", warn: "text-warn", fail: "text-fail" }[tone] || "text-bone";
+  const t = { signal: "text-signal", warn: "text-warn", fail: "text-fail", info: "text-info" }[tone] || "text-bone";
   return (
-    <div className="rounded-2xl border border-line bg-ink-raised p-5">
-      <p className="text-xs font-medium tracking-wide text-bone-faint uppercase">{label}</p>
-      <p className={`mt-2 font-mono text-3xl font-semibold tracking-tight lg:text-4xl ${toneClass}`}>
-        {value}
-      </p>
-      {note ? <p className="mt-1.5 text-xs leading-relaxed text-bone-dim">{note}</p> : null}
+    <div className="slab p-4">
+      <p className="tag">{label}</p>
+      <p className={`mt-2 font-mono text-[28px] leading-none font-bold tracking-tight ${t}`}>{value}</p>
+      {note ? <p className="mt-2 text-[11px] leading-snug text-bone-dim">{note}</p> : null}
     </div>
   );
 }
 
 export function Panel({ title, description, action, children, className = "" }) {
   return (
-    <section className={`rounded-2xl border border-line bg-ink-raised ${className}`}>
+    <section className={`slab ${className}`}>
       {(title || action) && (
-        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
-          <div>
-            {title ? <h2 className="text-sm font-semibold tracking-tight">{title}</h2> : null}
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-line px-4 py-3">
+          <div className="min-w-0">
+            {title ? (
+              <h2 className="font-mono text-[11px] font-bold tracking-wider uppercase">{title}</h2>
+            ) : null}
             {description ? (
-              <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-bone-dim">{description}</p>
+              <p className="mt-1.5 max-w-[82ch] text-xs leading-relaxed text-bone-dim">{description}</p>
             ) : null}
           </div>
           {action}
         </header>
       )}
-      <div className="p-5">{children}</div>
+      <div className="p-4">{children}</div>
     </section>
   );
 }
 
 export function Verdict({ action }) {
   const map = {
-    BLOCK: "bg-signal/15 text-signal border-signal/30",
-    STEP_UP: "bg-warn/15 text-warn border-warn/30",
-    ALLOW: "bg-fail/15 text-fail border-fail/30",
-    FLAG: "bg-signal/15 text-signal border-signal/30",
-    MISS: "bg-fail/15 text-fail border-fail/30",
+    BLOCK: "border-signal text-signal",
+    STEP_UP: "border-warn text-warn",
+    ALLOW: "border-fail text-fail",
+    FLAG: "border-signal text-signal",
+    MISS: "border-fail text-fail",
   };
   return (
-    <span
-      className={`inline-block rounded-full border px-2 py-0.5 font-mono text-[11px] font-semibold ${
-        map[action] || map.ALLOW
-      }`}
-    >
+    <span className={`inline-block border-2 px-1.5 py-0.5 font-mono text-[10px] font-bold ${map[action] || map.ALLOW}`}>
       {action}
     </span>
   );
 }
 
 export function Spinner() {
-  return (
-    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-  );
+  return <span className="inline-block h-3 w-3 animate-spin border-2 border-current border-t-transparent" />;
 }
 
 export function ErrorNote({ children }) {
   if (!children) return null;
   return (
-    <div role="alert" className="rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-xs text-warn">
+    <div role="alert" className="border-2 border-warn bg-warn/10 px-4 py-3 font-mono text-xs text-warn">
       {children}
     </div>
+  );
+}
+
+export function PageHead({ title, kicker, children, action }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        {kicker ? <p className="tag mb-2">{kicker}</p> : null}
+        <h1 className="text-2xl font-bold tracking-tight lg:text-[32px] lg:leading-[1.1]">{title}</h1>
+        {children ? (
+          <p className="mt-2.5 max-w-[84ch] text-sm leading-relaxed text-bone-dim">{children}</p>
+        ) : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/** No filled background track, per the anti-dashboard-clutter rule. */
+export function Bar({ value, max = 1, tone = "signal" }) {
+  const cls = { signal: "bg-signal", warn: "bg-warn", fail: "bg-fail", info: "bg-info" }[tone] || "bg-signal";
+  return (
+    <span className="h-1.5 flex-1 bg-line">
+      <span className={`block h-full ${cls}`} style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+    </span>
   );
 }
 
