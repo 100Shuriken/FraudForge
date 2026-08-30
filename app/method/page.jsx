@@ -1,6 +1,6 @@
 "use client";
 
-import { Shell, Panel, PageHead } from "@/components/shell";
+import { Shell, Panel, PageHead, Footnote } from "@/components/shell";
 import { TAXONOMY_STATS } from "@/lib/taxonomy";
 
 const LOOP = [
@@ -64,74 +64,99 @@ const STACK = [
 export default function Method() {
   return (
     <Shell>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <PageHead kicker="Evidence" title="How it works, and what it does not claim">
           The honest version. What the loop does step by step, which numbers are measured,
           where the approach is weak, and what deploying it would actually involve.
         </PageHead>
 
+        {/* ── The loop, as a real numbered sequence ─────────────────────────
+            The previous version faked progression with an inline
+            paddingLeft: i * 1.1rem indent, which drifted the copy further
+            right on every row and broke the reading column. */}
         <Panel title="The closed loop" description="The order the engine executes.">
-          <div className="space-y-px">
+          <ol className="relative space-y-0">
             {LOOP.map(([verb, body], i) => (
-              <div key={verb} className="rule grid gap-3 py-4 lg:grid-cols-12 lg:gap-6"
-                style={{ paddingLeft: `${i * 1.1}rem` }}>
-                <h3 className="font-mono text-sm font-bold tracking-wide uppercase text-signal lg:col-span-3">
-                  {verb}
-                </h3>
-                <p className="max-w-[74ch] text-sm leading-relaxed text-bone-dim lg:col-span-9">{body}</p>
-              </div>
+              <li key={verb} className="relative flex gap-4 pb-6 last:pb-0">
+                {/* Connector rail */}
+                {i < LOOP.length - 1 ? (
+                  <span
+                    aria-hidden
+                    className="absolute top-8 bottom-0 left-[13px] w-px bg-edge"
+                  />
+                ) : null}
+                <span className="relative z-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-azure/15 font-mono text-[12px] font-semibold text-azure">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <h3 className="text-h3">{verb}</h3>
+                  <p className="prose-measure mt-1.5 text-body text-fg-muted">{body}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </Panel>
 
+        {/* ── Claims. Three distinct treatments, because they say three
+              different kinds of thing. ─────────────────────────────────── */}
         <div className="grid gap-4 lg:grid-cols-3">
-          {CLAIMS.map((c) => (
-            <section key={c.title}
-              className={`slab p-5 ${
-                c.tone === "signal" ? "border-signal/50" : c.tone === "warn" ? "border-warn/50" : "border-fail/50"
-              }`}>
-              <h2 className={`font-mono text-[11px] font-bold tracking-wider uppercase ${
-                c.tone === "signal" ? "text-signal" : c.tone === "warn" ? "text-warn" : "text-fail"
-              }`}>
-                {c.title}
-              </h2>
-              <ul className="mt-4 space-y-3">
-                {c.points.map((p) => (
-                  <li key={p} className="text-xs leading-relaxed text-bone-dim">{p}</li>
-                ))}
-              </ul>
-            </section>
-          ))}
+          {CLAIMS.map((c) => {
+            const accent =
+              c.tone === "signal"
+                ? { border: "border-caught/40", text: "text-caught", dot: "bg-caught" }
+                : c.tone === "warn"
+                  ? { border: "border-review/40", text: "text-review", dot: "bg-review" }
+                  : { border: "border-evaded/40", text: "text-evaded", dot: "bg-evaded" };
+            return (
+              <section
+                key={c.title}
+                className={`card border ${accent.border} flex flex-col p-5`}
+              >
+                <h2 className={`text-h3 ${accent.text}`}>{c.title}</h2>
+                <ul className="mt-4 space-y-3">
+                  {c.points.map((p) => (
+                    <li key={p} className="flex gap-2.5 text-body-sm text-fg-muted">
+                      <span
+                        aria-hidden
+                        className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${accent.dot}`}
+                      />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
 
-        <Panel title="Real-world feasibility" description="What it would take to run this against live payments.">
-          <div className="grid gap-4 md:grid-cols-2">
+        <Panel
+          title="Real-world feasibility"
+          description="What it would take to run this against live payments."
+        >
+          <div className="grid gap-3 md:grid-cols-2">
             {FEASIBILITY.map(([k, v]) => (
-              <div key={k} className="slab p-4">
-                <p className="font-mono text-[11px] font-bold tracking-wide uppercase text-bone">{k}</p>
-                <p className="mt-2 text-xs leading-relaxed text-bone-dim">{v}</p>
+              <div key={k} className="well p-4">
+                <p className="text-h3">{k}</p>
+                <p className="mt-2 text-body-sm text-fg-muted">{v}</p>
               </div>
             ))}
           </div>
         </Panel>
 
         <Panel title="Stack">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-left text-sm">
-              <tbody>
-                {STACK.map(([k, v]) => (
-                  <tr key={k} className="border-b border-line/60 align-top">
-                    <td className="w-44 py-3 pr-6 font-mono text-[11px] font-bold tracking-wide uppercase">{k}</td>
-                    <td className="py-3 text-sm leading-relaxed text-bone-dim">{v}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-4 font-mono text-[10px] text-bone-faint">
+          <dl className="divide-y divide-edge">
+            {STACK.map(([k, v]) => (
+              <div key={k} className="grid gap-1 py-3.5 first:pt-0 last:pb-0 md:grid-cols-12 md:gap-6">
+                <dt className="text-body-sm font-medium text-fg md:col-span-3">{k}</dt>
+                <dd className="text-body-sm text-fg-muted md:col-span-9">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <Footnote className="mt-5">
             Taxonomy: {TAXONOMY_STATS.vectors} vectors, {TAXONOMY_STATS.rails.length} rails,{" "}
-            {TAXONOMY_STATS.surfaces.length} surfaces. All generatable, all scored by the same engine.
-          </p>
+            {TAXONOMY_STATS.surfaces.length} surfaces. All generatable, all scored by the same
+            engine.
+          </Footnote>
         </Panel>
       </div>
     </Shell>

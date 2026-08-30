@@ -5,19 +5,32 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check:functional": "node tools/checks/regress.mjs",
+    "check:colour": "node tools/checks/colorcheck.mjs",
+    "check:charts": "node tools/checks/chartcheck.mjs",
+    "check:labels": "node tools/checks/labelcheck.mjs",
+    "check:identify": "node tools/checks/identifycheck.mjs",
+    "capture": "node tools/checks/capture.mjs",
+    "check:all": "npm run check:functional && npm run check:colour && npm run check:charts && npm run check:labels && npm run check:identify"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "geist": "^1.7.2",
+    "lucide-react": "^1.37.0",
     "motion": "^13.1.1",
     "next": "^16.3.3",
+    "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "three": "^0.185.1"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
+    "playwright-core": "^1.62.1",
+    "shadcn": "^4.19.0",
     "tailwindcss": "^4.3.3"
   }
 }

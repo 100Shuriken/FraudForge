@@ -2,8 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FileArrowDown, Printer, ArrowsClockwise } from "@phosphor-icons/react";
-import { Shell, Panel, Stat, Verdict, Spinner, ErrorNote, PageHead, pct, money } from "@/components/shell";
-import { SpatialSequence } from "@/components/sequence";
+import {
+  Shell, Panel, Stat, Verdict, Spinner, ErrorNote, PageHead, Footnote,
+  StatSkeleton, Hint, DEFS, pct, money,
+} from "@/components/shell";
+import { SpatialSequence, SequenceDetail } from "@/components/sequence";
+import { rateTone, countTone, costTone } from "@/lib/tone";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const clock = (iso) => {
   try {
@@ -16,7 +23,7 @@ const clock = (iso) => {
 export default function Report() {
   const [meta, setMeta] = useState(null);
   const [targetId, setTargetId] = useState("C0001");
-  const [attackType, setAttackType] = useState("");
+  const [attackType, setAttackType] = useState("auto");
   const [report, setReport] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -36,7 +43,10 @@ export default function Report() {
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetId, attackType: attackType || null }),
+        body: JSON.stringify({
+          targetId,
+          attackType: attackType === "auto" ? null : attackType,
+        }),
       });
       if (!res.ok) throw new Error(`Report failed, HTTP ${res.status}`);
       setReport(await res.json());
@@ -88,131 +98,212 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
   };
 
   const s = report?.summary;
+  const active = report?.payments[selected];
 
   return (
     <Shell>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <ErrorNote>{error}</ErrorNote>
 
-        <div className="ff-no-print space-y-4">
+        <div className="ff-no-print space-y-5">
           <PageHead kicker="Evidence" title="One incident, start to finish">
-            Who was targeted, why that attack was chosen, what was sent, what each detector said,
-            what got through, and what the model learned. Computed in a single pass so every
-            section describes the same run.
+            Who was targeted, why that attack was chosen, what was sent, what each detector
+            said, what got through, and what the model learned. Computed in a single pass so
+            every section describes the same run.
           </PageHead>
 
-          <div className="slab grid gap-3 p-4 lg:grid-cols-12">
-            <label className="lg:col-span-5">
-              <span className="tag mb-1.5 block">Target</span>
-              <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="field">
-                {meta?.customers.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.id} · {c.city}</option>)}
-              </select>
-            </label>
-            <label className="lg:col-span-5">
-              <span className="tag mb-1.5 block">Attack vector</span>
-              <select value={attackType} onChange={(e) => setAttackType(e.target.value)} className="field">
-                <option value="">Auto</option>
-                {meta?.families.map((f) => <option key={f.name} value={f.name}>{f.label}</option>)}
-              </select>
-            </label>
+          <div className="card grid gap-4 p-5 lg:grid-cols-12">
+            <div className="lg:col-span-5">
+              <label htmlFor="rep-target" className="label mb-1.5 block">Target</label>
+              <Select value={targetId} onValueChange={setTargetId}>
+                <SelectTrigger id="rep-target" className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {meta?.customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} · {c.id} · {c.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="lg:col-span-5">
+              <label htmlFor="rep-vector" className="label mb-1.5 block">Attack vector</label>
+              <Select value={attackType} onValueChange={setAttackType}>
+                <SelectTrigger id="rep-vector" className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto</SelectItem>
+                  {meta?.families.map((f) => (
+                    <SelectItem key={f.name} value={f.name}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-end lg:col-span-2">
-              <button type="button" onClick={generate} disabled={busy || !meta} className="btn btn-primary w-full">
-                {busy ? <><Spinner /> Building</> : <><ArrowsClockwise size={13} weight="bold" /> Generate</>}
+              <button
+                type="button"
+                onClick={generate}
+                disabled={busy || !meta}
+                aria-busy={busy}
+                className="btn btn-primary w-full"
+              >
+                {busy ? (
+                  <><Spinner /> Building</>
+                ) : (
+                  <><ArrowsClockwise size={13} weight="bold" /> Generate</>
+                )}
               </button>
             </div>
           </div>
         </div>
 
+        {busy && !report ? <StatSkeleton /> : null}
+
         {report && s ? (
-          <>
-            <Panel>
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-line pb-4">
-                <div>
-                  <h2 className="font-mono text-lg font-bold">{report.incidentId}</h2>
-                  <p className="mt-1 text-xs text-bone-dim">
+          <div className="space-y-6">
+            {/* ── Masthead. This is a document, so it gets a document's head. ── */}
+            <section className="card-lg overflow-hidden">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-edge px-6 py-5">
+                <div className="min-w-0">
+                  <p className="overline">Incident report</p>
+                  <h2 className="mt-1.5 font-mono text-h2 tracking-tight">
+                    {report.incidentId}
+                  </h2>
+                  <p className="mt-1.5 text-body-sm text-fg-muted">
                     {report.target.name} ({report.target.id}) · {report.target.city} ·{" "}
-                    <span className="font-mono text-signal">{report.attack.label}</span>
+                    <span className="text-ember">{report.attack.label}</span>
                   </p>
                 </div>
                 <div className="ff-no-print flex items-center gap-2">
-                  <button type="button" onClick={downloadDoc} className="btn">
+                  <button type="button" onClick={downloadDoc} className="btn btn-sm">
                     <FileArrowDown size={13} weight="bold" /> Word
                   </button>
-                  <button type="button" onClick={() => window.print()} className="btn">
+                  <button type="button" onClick={() => window.print()} className="btn btn-sm">
                     <Printer size={13} weight="bold" /> PDF
                   </button>
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 p-6 sm:grid-cols-2 lg:grid-cols-4">
+                <Stat emphasis label="Hardened caught"
+                  value={`${s.hardenedCaught}/${s.total}`} note={pct(s.detectionRate)}
+                  tone={countTone(s.hardenedCaught, s.total)} hint={DEFS.recall} />
+                <Stat label="Legacy caught" value={`${s.legacyCaught}/${s.total}`}
+                  note={pct(s.legacyDetectionRate)}
+                  tone={countTone(s.legacyCaught, s.total)} />
                 <Stat label="Payments sent" value={s.total} note={money(s.valueTotal)} />
-                <Stat label="Hardened caught" value={`${s.hardenedCaught}/${s.total}`} note={pct(s.detectionRate)} tone="signal" />
-                <Stat label="Legacy caught" value={`${s.legacyCaught}/${s.total}`} note={pct(s.legacyDetectionRate)} tone="fail" />
-                <Stat label="Value through" value={money(s.valueThrough)} note={`legacy let ${money(s.valueThroughLegacy)} through`} tone="warn" />
+                <Stat label="Value through" value={money(s.valueThrough)}
+                  note={`legacy let ${money(s.valueThroughLegacy)} through`}
+                  tone={costTone(s.valueThrough / Math.max(1, s.valueTotal),
+                                 { warn: 0.001, bad: 0.34 })} />
               </div>
 
-              <blockquote className="mt-5 border-2 border-line bg-ink px-4 py-3 text-sm leading-relaxed text-bone-dim italic">
-                {report.attack.lure}
-              </blockquote>
+              <figure className="border-t border-edge bg-inset px-6 py-5">
+                <figcaption className="overline mb-2">The lure</figcaption>
+                <blockquote className="prose-measure border-l-2 border-ember/60 pl-4 text-body text-fg-muted italic">
+                  {report.attack.lure}
+                </blockquote>
+              </figure>
+            </section>
+
+            <Panel
+              title="Attack sequence"
+              description="The shape of the attack, in the order it was sent."
+            >
+              <div className="space-y-4">
+                <SpatialSequence
+                  records={report.payments}
+                  selected={selected}
+                  onSelect={setSelected}
+                />
+                <SequenceDetail record={active} />
+              </div>
             </Panel>
 
-            <Panel title="Attack sequence" description="The shape of the attack, in the order it was sent.">
-              <SpatialSequence records={report.payments} selected={selected} onSelect={setSelected} />
-            </Panel>
-
-            <div className="space-y-3">
-              {report.phases.map((ph, i) => (
-                <section key={ph.id} className="slab p-5">
-                  <div className="flex items-start gap-4">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center border-2 border-signal bg-signal/10 font-mono text-xs font-bold text-signal">
+            {/* ── Phases as a numbered rail, so the narrative reads in order ── */}
+            <section className="card-lg">
+              <header className="border-b border-edge px-5 py-4">
+                <h2 className="text-h3">How the incident unfolded</h2>
+                <p className="mt-1.5 text-body-sm text-fg-subtle">
+                  Six phases, all computed from the same run.
+                </p>
+              </header>
+              <ol className="divide-y divide-edge">
+                {report.phases.map((ph, i) => (
+                  <li key={ph.id} className="flex gap-4 px-5 py-5">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-azure/15 font-mono text-[12px] font-semibold text-azure">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1 space-y-2.5">
                       <div>
-                        <h3 className="font-mono text-[11px] font-bold tracking-wider uppercase">{ph.title}</h3>
-                        <p className="mt-1 text-sm font-bold text-signal">{ph.headline}</p>
+                        <p className="overline">{ph.title}</p>
+                        <p className="mt-1 text-h3 text-fg">{ph.headline}</p>
                       </div>
-                      <p className="text-sm leading-relaxed text-bone-dim">{ph.detail}</p>
+                      <p className="prose-measure text-body text-fg-muted">{ph.detail}</p>
                       <dl className="flex flex-wrap gap-2 pt-1">
                         {ph.facts.map((x) => (
-                          <div key={x.label} className="border-2 border-line bg-ink px-2.5 py-1.5">
-                            <dt className="tag">{x.label}</dt>
-                            <dd className="mt-1 font-mono text-xs font-bold">{x.value}</dd>
+                          <div key={x.label} className="well px-3 py-2">
+                            <dt className="caption">{x.label}</dt>
+                            <dd className="mt-0.5 font-mono text-[12px] font-semibold tabular-nums">
+                              {x.value}
+                            </dd>
                           </div>
                         ))}
                       </dl>
                     </div>
-                  </div>
-                </section>
-              ))}
-            </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
-            <Panel title="Payment ledger" description="Every payment, both verdicts, and the scorer's own reasons.">
+            <Panel
+              title="Payment ledger"
+              description="Every payment, both verdicts, and the scorer's own reasons."
+            >
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[860px] text-left text-sm">
+                <table className="zebra w-full min-w-[860px] text-left">
                   <thead>
-                    <tr className="border-b-2 border-line">
-                      <th className="tag pr-4 pb-2">#</th>
-                      <th className="tag pr-4 pb-2">Time</th>
-                      <th className="tag pr-4 pb-2">Amount</th>
-                      <th className="tag pr-4 pb-2 text-right">vs base</th>
-                      <th className="tag pr-4 pb-2 text-right">Risk</th>
-                      <th className="tag pr-4 pb-2">Hardened</th>
-                      <th className="tag pr-4 pb-2">Legacy</th>
-                      <th className="tag pb-2">Why</th>
+                    <tr className="border-b border-edge">
+                      {["#", "Time", "Amount", "vs base", "Risk", "Hardened", "Legacy", "Why"].map(
+                        (h, i) => (
+                          <th
+                            key={h}
+                            className={`col-head pb-2.5 ${i === 7 ? "" : "pr-4"} ${
+                              i === 3 || i === 4 ? "text-right" : ""
+                            }`}
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {report.payments.map((p) => (
-                      <tr key={p.id} className="border-b border-line/60 align-top">
-                        <td className="py-2.5 pr-4 font-mono text-bone-faint">{p.step}</td>
-                        <td className="py-2.5 pr-4 font-mono text-bone-faint">{clock(p.at)}</td>
-                        <td className="py-2.5 pr-4 font-mono font-bold">${p.amount.toLocaleString()}</td>
-                        <td className="py-2.5 pr-4 text-right font-mono text-bone-dim">{p.amountRatio}x</td>
-                        <td className="py-2.5 pr-4 text-right font-mono font-bold">{p.riskScore.toFixed(2)}</td>
+                    {report.payments.map((p, i) => (
+                      <tr
+                        key={p.id}
+                        onClick={() => setSelected(i)}
+                        className={`cursor-pointer border-b border-edge/60 align-top transition-colors ${
+                          i === selected ? "bg-azure/8" : "hover:bg-overlay/50"
+                        }`}
+                      >
+                        <td className="caption py-2.5 pr-4 font-mono tabular-nums">{p.step}</td>
+                        <td className="caption py-2.5 pr-4 font-mono tabular-nums">{clock(p.at)}</td>
+                        <td className="py-2.5 pr-4 font-mono text-[13px] font-semibold tabular-nums">
+                          ${p.amount.toLocaleString()}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right font-mono text-[13px] text-fg-muted tabular-nums">
+                          {p.amountRatio}x
+                        </td>
+                        <td className="py-2.5 pr-4 text-right font-mono text-[13px] font-semibold tabular-nums">
+                          {p.riskScore.toFixed(2)}
+                        </td>
                         <td className="py-2.5 pr-4"><Verdict action={p.action} /></td>
-                        <td className="py-2.5 pr-4"><Verdict action={p.legacyFlagged ? "FLAG" : "MISS"} /></td>
-                        <td className="py-2.5 max-w-[24rem] text-[11px] leading-relaxed text-bone-dim">{p.reasons.join(", ")}</td>
+                        <td className="py-2.5 pr-4">
+                          <Verdict action={p.legacyFlagged ? "FLAG" : "MISS"} />
+                        </td>
+                        <td className="py-2.5 max-w-[24rem] text-body-sm text-fg-subtle">
+                          {p.reasons.join(", ")}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -221,43 +312,62 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
             </Panel>
 
             {report.training ? (
-              <Panel title="What the defender learned" description="Three rounds against one fixed held-out split.">
+              <Panel
+                title="What the defender learned"
+                description="Three rounds against one fixed held-out split."
+              >
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[620px] text-left text-sm">
+                  <table className="zebra w-full min-w-[620px] text-left">
                     <thead>
-                      <tr className="border-b-2 border-line">
-                        <th className="tag pr-4 pb-2">Pass</th>
-                        <th className="tag pr-4 pb-2 text-right">Recall</th>
-                        <th className="tag pr-4 pb-2 text-right">Precision</th>
-                        <th className="tag pr-4 pb-2 text-right">AUC</th>
-                        <th className="tag pb-2">What changed</th>
+                      <tr className="border-b border-edge">
+                        <th className="col-head pr-4 pb-2.5">Pass</th>
+                        {[["Recall", DEFS.recall], ["Precision", DEFS.precision],
+                          ["AUC", DEFS.auc]].map(([h, d]) => (
+                          <th key={h} className="col-head pr-4 pb-2.5 text-right">
+                            <span className="inline-flex items-center gap-1">
+                              {h} <Hint>{d}</Hint>
+                            </span>
+                          </th>
+                        ))}
+                        <th className="col-head pb-2.5">What changed</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.training.rounds.map((r) => (
-                        <tr key={r.round} className="border-b border-line/60 align-top">
-                          <td className="py-2.5 pr-4 font-medium">{r.name}</td>
-                          <td className="py-2.5 pr-4 text-right font-mono font-bold text-signal">{pct(r.recall)}</td>
-                          <td className="py-2.5 pr-4 text-right font-mono text-bone-dim">{pct(r.precision)}</td>
-                          <td className="py-2.5 pr-4 text-right font-mono text-bone-dim">{r.auc.toFixed(3)}</td>
-                          <td className="py-2.5 text-[11px] leading-relaxed text-bone-dim">{r.description}</td>
+                        <tr key={r.round} className="border-b border-edge/60 align-top">
+                          <td className="py-2.5 pr-4 text-body-sm font-medium">{r.name}</td>
+                          <td className={`py-2.5 pr-4 text-right font-mono text-[13px] font-semibold tabular-nums ${
+                            { caught: "text-caught", review: "text-review", evaded: "text-evaded" }[rateTone(r.recall)]
+                          }`}>
+                            {pct(r.recall)}
+                          </td>
+                          <td className="py-2.5 pr-4 text-right font-mono text-[13px] text-fg-muted tabular-nums">
+                            {pct(r.precision)}
+                          </td>
+                          <td className="py-2.5 pr-4 text-right font-mono text-[13px] text-fg-muted tabular-nums">
+                            {r.auc.toFixed(3)}
+                          </td>
+                          <td className="py-2.5 text-body-sm text-fg-subtle">{r.description}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-4 border-2 border-line bg-ink px-4 py-3 text-xs leading-relaxed text-bone-dim">
-                  {report.training.evasionAdvice}
-                </p>
+                <div className="mt-4 rounded-md border border-ember/35 bg-ember/6 p-4">
+                  <p className="overline mb-1.5">Where the attacker goes next</p>
+                  <p className="text-body-sm text-fg-muted">
+                    {report.training.evasionAdvice}
+                  </p>
+                </div>
               </Panel>
             ) : null}
 
-            <p className="rule pt-4 font-mono text-[10px] leading-relaxed text-bone-faint">
+            <Footnote>
               Generator: {report.provenance.generator}. Scorers: {report.provenance.scorers}.
-              Review threshold {report.thresholds.review}, block threshold {report.thresholds.block}.
-              Seed {report.seed}. All data synthetic.
-            </p>
-          </>
+              Review threshold {report.thresholds.review}, block threshold{" "}
+              {report.thresholds.block}. Seed {report.seed}. All data synthetic.
+            </Footnote>
+          </div>
         ) : null}
       </div>
     </Shell>

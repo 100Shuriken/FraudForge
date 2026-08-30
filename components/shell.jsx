@@ -1,198 +1,229 @@
 "use client";
 
+import { createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Crosshair, MagnifyingGlass, Lightning, ShieldCheck,
-  SlidersHorizontal, FileText, Notebook,
+  Crosshair,
+  MagnifyingGlass,
+  Lightning,
+  ShieldCheck,
+  SlidersHorizontal,
+  FileText,
+  Notebook,
+  Info,
 } from "@phosphor-icons/react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
+/* Navigation is grouped so the rail reads as a process, not a flat list. The
+   old second line on every item ("Pillar 1", "Analysis", "Evidence") exposed an
+   internal taxonomy as navigation; the grouping carries that meaning instead. */
 const NAV = [
-  { href: "/", label: "Cockpit", pillar: "Loop", Icon: Crosshair },
-  { href: "/identify", label: "Identify", pillar: "Pillar 1", Icon: MagnifyingGlass },
-  { href: "/generate", label: "Generate", pillar: "Pillar 2", Icon: Lightning },
-  { href: "/defender", label: "Defend", pillar: "Pillar 3", Icon: ShieldCheck },
-  { href: "/sandbox", label: "Sandbox", pillar: "Analysis", Icon: SlidersHorizontal },
-  { href: "/report", label: "Report", pillar: "Evidence", Icon: FileText },
-  { href: "/method", label: "Method", pillar: "Evidence", Icon: Notebook },
+  {
+    group: "Loop",
+    items: [{ href: "/", label: "Cockpit", Icon: Crosshair }],
+  },
+  {
+    group: "Pillars",
+    items: [
+      { href: "/identify", label: "Identify", Icon: MagnifyingGlass },
+      { href: "/generate", label: "Generate", Icon: Lightning },
+      { href: "/defender", label: "Defend", Icon: ShieldCheck },
+    ],
+  },
+  {
+    group: "Evidence",
+    items: [
+      { href: "/sandbox", label: "Sandbox", Icon: SlidersHorizontal },
+      { href: "/report", label: "Report", Icon: FileText },
+      { href: "/method", label: "Method", Icon: Notebook },
+    ],
+  },
 ];
+
+const FLAT = NAV.flatMap((g) => g.items);
 
 export function Shell({ children }) {
   const path = usePathname();
-  const current = NAV.find((n) => n.href === path);
+  const current = FLAT.find((n) => n.href === path);
 
   return (
-    <div className="min-h-[100dvh] lg:flex">
-      {/* ── Rail. Liquid glass, the one place translucency earns itself. ── */}
-      <aside className="glass-rail sticky top-0 z-40 hidden h-[100dvh] w-52 shrink-0 flex-col lg:flex">
-        <Link href="/" className="flex items-center gap-2.5 border-b-2 border-line px-4 py-4">
-          <span className="grid h-7 w-7 shrink-0 place-items-center bg-signal">
-            <span className="h-2.5 w-2.5 bg-void" />
-          </span>
-          <span className="font-mono text-[13px] leading-none font-bold tracking-tight">
-            FRAUDFORGE
-          </span>
-        </Link>
+    <TooltipProvider delayDuration={200}>
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
 
-        <nav className="flex-1 overflow-y-auto p-2">
-          {NAV.map(({ href, label, pillar, Icon }) => {
-            const active = path === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`mb-0.5 flex items-center gap-2.5 border-2 px-2.5 py-2 transition-colors ${
-                  active
-                    ? "border-signal bg-signal/10 text-signal"
-                    : "border-transparent text-bone-dim hover:border-line hover:bg-ink-raised hover:text-bone"
-                }`}
-              >
-                <Icon size={15} weight="bold" className="shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-[11px] leading-none font-bold tracking-wide uppercase">
-                    {label}
-                  </span>
-                  <span className="mt-1 block text-[9px] leading-none text-bone-faint">{pillar}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+      <div className="min-h-[100dvh] lg:flex">
+        {/* ── Rail ───────────────────────────────────────────────────── */}
+        <aside className="chrome sticky top-0 z-40 hidden h-[100dvh] w-60 shrink-0 flex-col border-r border-edge lg:flex">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 border-b border-edge px-5 py-4"
+          >
+            <Mark />
+            <span className="text-[15px] leading-none font-semibold tracking-tight">
+              FraudForge
+            </span>
+          </Link>
 
-        <div className="border-t-2 border-line px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="pulse-dot" />
-            <span className="tag">Synthetic only</span>
+          <nav aria-label="Primary" className="flex-1 overflow-y-auto px-3 py-4">
+            {NAV.map(({ group, items }) => (
+              <div key={group} className="mb-5 last:mb-0">
+                <p className="overline mb-2 px-2">{group}</p>
+                {items.map(({ href, label, Icon }) => {
+                  const active = path === href;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      aria-current={active ? "page" : undefined}
+                      className={`mb-0.5 flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-[13px] font-medium transition-colors ${
+                        active
+                          ? "bg-azure/12 text-azure"
+                          : "text-fg-muted hover:bg-overlay hover:text-fg"
+                      }`}
+                    >
+                      <Icon
+                        size={16}
+                        weight={active ? "fill" : "regular"}
+                        className="shrink-0"
+                      />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+
+          <div className="border-t border-edge px-5 py-4">
+            <div className="flex items-center gap-2">
+              <span className="pulse-dot" />
+              <span className="caption">Synthetic data only</span>
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* ── Mobile bar ─────────────────────────────────────────────── */}
-        <header className="glass sticky top-0 z-50 lg:hidden">
-          <div className="flex h-14 items-center gap-3 px-3">
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center bg-signal">
-                <span className="h-2 w-2 bg-void" />
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* ── Mobile header ────────────────────────────────────────── */}
+          <header className="chrome sticky top-0 z-50 border-b border-edge lg:hidden">
+            <div className="flex h-14 items-center gap-2.5 px-4">
+              <Mark />
+              <span className="text-[14px] font-semibold tracking-tight">
+                FraudForge
               </span>
-            </Link>
-            <nav className="flex items-center gap-1 overflow-x-auto">
-              {NAV.map(({ href, label, Icon }) => {
+              <span className="ml-auto text-[13px] text-fg-muted">
+                {current?.label}
+              </span>
+            </div>
+          </header>
+
+          {/* ── Desktop context bar ──────────────────────────────────── */}
+          <header className="chrome sticky top-0 z-30 hidden border-b border-edge lg:block">
+            <div className="flex h-12 items-center justify-between px-8">
+              <p className="text-[13px] text-fg-subtle">
+                Mastercard Innovation Challenge
+                <span className="mx-2 text-edge-strong">/</span>
+                GFF 2026
+                <span className="mx-2 text-edge-strong">/</span>
+                <span className="font-medium text-fg">
+                  {current?.label || "Cockpit"}
+                </span>
+              </p>
+              <p className="caption">Closed-loop red team, blue team</p>
+            </div>
+          </header>
+
+          <main
+            id="main"
+            className="relative z-1 mx-auto w-full max-w-[1320px] px-4 py-7 pb-24 lg:px-8 lg:py-9 lg:pb-14"
+          >
+            {children}
+          </main>
+
+          <footer className="mt-auto border-t border-edge">
+            <div className="mx-auto max-w-[1320px] px-4 py-6 pb-24 lg:px-8 lg:pb-6">
+              <p className="caption prose-measure">
+                Every figure is computed on request. No real customer, payment or
+                account is represented anywhere in this system.
+              </p>
+            </div>
+          </footer>
+
+          {/* ── Mobile tab bar ───────────────────────────────────────────
+              Replaces the horizontal scroll strip, which clipped the fourth
+              item mid-word at 390px with no scroll affordance. Seven
+              destinations, all reachable, all 44px tall. */}
+          <nav
+            aria-label="Primary"
+            className="chrome fixed inset-x-0 bottom-0 z-50 border-t border-edge lg:hidden"
+          >
+            <ul className="grid grid-cols-7">
+              {FLAT.map(({ href, label, Icon }) => {
                 const active = path === href;
                 return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex shrink-0 items-center gap-1.5 border-2 px-2 py-1.5 font-mono text-[10px] font-bold tracking-wide uppercase whitespace-nowrap ${
-                      active ? "border-signal bg-signal/10 text-signal" : "border-line text-bone-dim"
-                    }`}
-                  >
-                    <Icon size={12} weight="bold" />
-                    {label}
-                  </Link>
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium ${
+                        active ? "text-azure" : "text-fg-subtle"
+                      }`}
+                    >
+                      <Icon size={18} weight={active ? "fill" : "regular"} />
+                      <span className="leading-none">{label}</span>
+                    </Link>
+                  </li>
                 );
               })}
-            </nav>
-          </div>
-        </header>
-
-        {/* ── Desktop context bar ────────────────────────────────────── */}
-        <header className="glass sticky top-0 z-30 hidden lg:block">
-          <div className="flex h-11 items-center justify-between px-6">
-            <p className="font-mono text-[11px] text-bone-faint">
-              Mastercard Innovation Challenge <span className="text-line">/</span> GFF 2026{" "}
-              <span className="text-line">/</span>{" "}
-              <span className="font-bold text-bone">{current?.label || "Cockpit"}</span>
-            </p>
-            <p className="tag">Closed-loop red team, blue team</p>
-          </div>
-        </header>
-
-        <main className="mx-auto w-full max-w-[1440px] px-4 py-8 lg:px-8 lg:py-10">{children}</main>
-
-        <footer className="mt-auto border-t-2 border-line">
-          <div className="mx-auto max-w-[1440px] px-4 py-6 font-mono text-[10px] leading-relaxed text-bone-faint lg:px-8">
-            Every figure is computed on request. No real customer, payment or account is
-            represented anywhere in this system.
-          </div>
-        </footer>
+            </ul>
+          </nav>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
-/* ---- Shared pieces ------------------------------------------------------ */
-
-export function Stat({ label, value, note, tone }) {
-  const t = { signal: "text-signal", warn: "text-warn", fail: "text-fail", info: "text-info" }[tone] || "text-bone";
+/* The mark is azure, never a data colour. A closed loop with an offset gap:
+   the red team's opening. */
+function Mark() {
   return (
-    <div className="slab p-4">
-      <p className="tag">{label}</p>
-      <p className={`mt-2 font-mono text-[28px] leading-none font-bold tracking-tight ${t}`}>{value}</p>
-      {note ? <p className="mt-2 text-[11px] leading-snug text-bone-dim">{note}</p> : null}
-    </div>
-  );
-}
-
-export function Panel({ title, description, action, children, className = "" }) {
-  return (
-    <section className={`slab ${className}`}>
-      {(title || action) && (
-        <header className="flex flex-wrap items-start justify-between gap-3 border-b-2 border-line px-4 py-3">
-          <div className="min-w-0">
-            {title ? (
-              <h2 className="font-mono text-[11px] font-bold tracking-wider uppercase">{title}</h2>
-            ) : null}
-            {description ? (
-              <p className="mt-1.5 max-w-[82ch] text-xs leading-relaxed text-bone-dim">{description}</p>
-            ) : null}
-          </div>
-          {action}
-        </header>
-      )}
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-export function Verdict({ action }) {
-  const map = {
-    BLOCK: "border-signal text-signal",
-    STEP_UP: "border-warn text-warn",
-    ALLOW: "border-fail text-fail",
-    FLAG: "border-signal text-signal",
-    MISS: "border-fail text-fail",
-  };
-  return (
-    <span className={`inline-block border-2 px-1.5 py-0.5 font-mono text-[10px] font-bold ${map[action] || map.ALLOW}`}>
-      {action}
+    <span
+      aria-hidden
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-azure/15 ring-1 ring-azure/40"
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <circle
+          cx="8"
+          cy="8"
+          r="5.5"
+          stroke="var(--color-azure)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="26 9"
+          transform="rotate(-45 8 8)"
+        />
+        <circle cx="8" cy="8" r="1.75" fill="var(--color-ember)" />
+      </svg>
     </span>
   );
 }
 
-export function Spinner() {
-  return <span className="inline-block h-3 w-3 animate-spin border-2 border-current border-t-transparent" />;
-}
-
-export function ErrorNote({ children }) {
-  if (!children) return null;
-  return (
-    <div role="alert" className="border-2 border-warn bg-warn/10 px-4 py-3 font-mono text-xs text-warn">
-      {children}
-    </div>
-  );
-}
+/* ---- Page furniture ----------------------------------------------------- */
 
 export function PageHead({ title, kicker, children, action }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="flex flex-wrap items-end justify-between gap-5">
       <div className="min-w-0">
-        {kicker ? <p className="tag mb-2">{kicker}</p> : null}
-        <h1 className="text-2xl font-bold tracking-tight lg:text-[32px] lg:leading-[1.1]">{title}</h1>
+        {kicker ? <p className="overline mb-2.5">{kicker}</p> : null}
+        <h1 className="text-h1 lg:text-display">{title}</h1>
         {children ? (
-          <p className="mt-2.5 max-w-[84ch] text-sm leading-relaxed text-bone-dim">{children}</p>
+          <p className="prose-measure mt-3 text-body text-fg-muted">{children}</p>
         ) : null}
       </div>
       {action}
@@ -200,13 +231,244 @@ export function PageHead({ title, kicker, children, action }) {
   );
 }
 
-/** No filled background track, per the anti-dashboard-clutter rule. */
-export function Bar({ value, max = 1, tone = "signal" }) {
-  const cls = { signal: "bg-signal", warn: "bg-warn", fail: "bg-fail", info: "bg-info" }[tone] || "bg-signal";
+export function Panel({ title, description, action, children, className = "", id }) {
   return (
-    <span className="h-1.5 flex-1 bg-line">
-      <span className={`block h-full ${cls}`} style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+    <section id={id} className={`card ${className}`}>
+      {(title || action) && (
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-edge px-5 py-4">
+          <div className="min-w-0">
+            {title ? <h2 className="text-h3">{title}</h2> : null}
+            {description ? (
+              <p className="prose-measure mt-1.5 text-body-sm text-fg-subtle">
+                {description}
+              </p>
+            ) : null}
+          </div>
+          {action}
+        </header>
+      )}
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * Accent scope.
+ *
+ * Emphasis stops meaning "look here" the moment it sits inside something else
+ * already emphasised. Anything wrapped in <AccentScope> silently downgrades the
+ * `emphasis` prop on the Stats inside it, so nested accents cannot regress.
+ */
+const AccentCtx = createContext(false);
+
+export function AccentScope({ children, className = "" }) {
+  return (
+    <AccentCtx.Provider value={true}>
+      <div className={`card-accent card ${className}`}>{children}</div>
+    </AccentCtx.Provider>
+  );
+}
+
+/**
+ * Stat.
+ *
+ * `emphasis` promotes exactly one tile per group to the primary reading. The
+ * previous design gave twelve tiles identical weight, so the eye had no entry
+ * point; this is the fix.
+ *
+ * `tone` must come from lib/tone.js — computed from the value, never chosen
+ * from context. An undefined tone renders neutral, which is correct for any
+ * figure that is simply a count.
+ */
+export function Stat({ label, value, note, tone, emphasis = false, hint }) {
+  const insideAccent = useContext(AccentCtx);
+  const promoted = emphasis && !insideAccent;
+  const t =
+    { caught: "text-caught", review: "text-review", evaded: "text-evaded" }[tone] ||
+    "text-fg";
+
+  return (
+    <div className={promoted ? "card-accent card p-5" : "card p-4"}>
+      <div className="flex items-center gap-1.5">
+        <p className="label">{label}</p>
+        {hint ? <Hint>{hint}</Hint> : null}
+      </div>
+      <p
+        className={`mt-2 font-mono font-semibold tracking-tight tabular-nums ${t} ${
+          promoted ? "text-[34px] leading-none" : "text-[24px] leading-none"
+        }`}
+      >
+        {value}
+      </p>
+      {note ? <p className="caption mt-2">{note}</p> : null}
+    </div>
+  );
+}
+
+/** Inline definitions at the point of confusion, rather than only on /method. */
+export function Hint({ children }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        className="rounded-full text-fg-subtle transition-colors hover:text-fg-muted"
+        aria-label="What this means"
+      >
+        <Info size={13} weight="bold" />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[280px] text-[12px] leading-relaxed">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * Verdict.
+ *
+ * This is a defence product, so a blocked payment is a win and an allowed one
+ * is a loss. That reads backwards to anyone expecting green-means-go, so the
+ * mapping is stated in <VerdictLegend/> rather than left implicit, and every
+ * badge pairs its colour with a word — never colour alone.
+ */
+const VERDICT = {
+  BLOCK: "border-caught/45 bg-caught/12 text-caught",
+  FLAG: "border-caught/45 bg-caught/12 text-caught",
+  STEP_UP: "border-review/45 bg-review/12 text-review",
+  ALLOW: "border-evaded/45 bg-evaded/12 text-evaded",
+  MISS: "border-evaded/45 bg-evaded/12 text-evaded",
+};
+
+export function Verdict({ action }) {
+  return (
+    <span
+      className={`inline-block rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wide ${
+        VERDICT[action] || VERDICT.ALLOW
+      }`}
+    >
+      {action}
     </span>
+  );
+}
+
+/**
+ * VerdictLegend.
+ *
+ * A legend is a key to what is on screen, not a catalogue of what the system
+ * can produce. Pass `states` (a Set from presentStates()) and only the outcomes
+ * actually present are listed — a run where every payment evaded should not
+ * advertise two colours that never appear.
+ */
+export function VerdictLegend({ className = "", states = null }) {
+  const rows = [
+    ["caught", "bg-caught", "Caught", "the detector stopped it"],
+    ["review", "bg-review", "Step-up", "sent to challenge"],
+    ["evaded", "bg-evaded", "Evaded", "allowed through"],
+  ].filter(([key]) => !states || states.has(key));
+
+  if (!rows.length) return null;
+
+  return (
+    <div className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 ${className}`}>
+      {rows.map(([, dot, label, meaning]) => (
+        <span key={label} className="flex items-center gap-1.5">
+          <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden />
+          <span className="caption">
+            <span className="text-fg-muted">{label}</span> — {meaning}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Bar.
+ *
+ * Defaults to `magnitude`, NOT to a semantic colour. A bar that encodes "how
+ * much" — a signal contribution, a feature weight — has no verdict attached to
+ * it, and painting it amber made amber mean "a bar" in one place and "step-up"
+ * in another. Pass a semantic tone only when the value genuinely carries one.
+ */
+export function Bar({ value, max = 1, tone = "magnitude" }) {
+  const cls =
+    {
+      caught: "bg-caught",
+      review: "bg-review",
+      evaded: "bg-evaded",
+      magnitude: "bg-magnitude",
+    }[tone] || "bg-magnitude";
+  return (
+    <span className="bar-track">
+      <span
+        className={`bar-fill ${cls}`}
+        style={{ width: `${Math.max(2, Math.min(100, (value / max) * 100))}%` }}
+      />
+    </span>
+  );
+}
+
+export function Spinner() {
+  return (
+    <span
+      aria-hidden
+      className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+    />
+  );
+}
+
+export function Skeleton({ className = "" }) {
+  return <span className={`skeleton block ${className}`} aria-hidden />;
+}
+
+/** Replaces bare "Scoring…" text with something the same shape as the result. */
+export function StatSkeleton({ count = 4 }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="card p-4">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="mt-3 h-6 w-24" />
+          <Skeleton className="mt-3 h-3 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function EmptyState({ title, children, action, Icon }) {
+  return (
+    <div className="card flex flex-col items-center px-6 py-14 text-center">
+      {Icon ? (
+        <span className="mb-4 grid h-11 w-11 place-items-center rounded-lg bg-inset text-fg-subtle">
+          <Icon size={20} weight="regular" />
+        </span>
+      ) : null}
+      <p className="text-h3">{title}</p>
+      {children ? (
+        <p className="mt-2 max-w-[46ch] text-body-sm text-fg-subtle">{children}</p>
+      ) : null}
+      {action ? <div className="mt-5">{action}</div> : null}
+    </div>
+  );
+}
+
+export function ErrorNote({ children }) {
+  if (!children) return null;
+  return (
+    <div
+      role="alert"
+      className="rounded-md border border-evaded/45 bg-evaded/10 px-4 py-3 text-body-sm text-evaded"
+    >
+      {children}
+    </div>
+  );
+}
+
+export function Footnote({ children, className = "" }) {
+  return (
+    <p className={`caption prose-measure border-t border-edge pt-4 ${className}`}>
+      {children}
+    </p>
   );
 }
 
@@ -214,4 +476,17 @@ export const pct = (n, d = 1) =>
   n == null || Number.isNaN(Number(n)) ? "-" : `${(Number(n) * 100).toFixed(d)}%`;
 
 export const money = (n) =>
-  n == null ? "-" : `$${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  n == null
+    ? "-"
+    : `$${Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+
+/** Shared metric definitions, so the wording is identical everywhere. */
+export const DEFS = {
+  recall: "Of all the fraud in the corpus, the share this detector caught.",
+  precision: "Of everything this detector flagged, the share that was actually fraud.",
+  f1: "The balance of recall and precision as a single number. Higher is better.",
+  auc: "How well the model ranks fraud above legitimate traffic, from 0.5 (coin flip) to 1.0 (perfect).",
+  fpr: "The share of legitimate payments wrongly flagged. This is the friction customers feel.",
+  stepUp: "The payment is challenged rather than blocked — a one-time code, a biometric, a call.",
+  baseRate: "How rare fraud actually is in the live stream. Precision falls hard as it drops.",
+};

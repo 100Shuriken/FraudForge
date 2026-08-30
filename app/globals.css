@@ -1,271 +1,654 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   FraudForge design system
+   FraudForge design system  —  "Instrumentation, not terminal"
 
-   THREE LANGUAGES, EACH WITH A SCOPE. This is the whole discipline of this
-   file. Spatial, brutalist and liquid-glass contradict each other, so each
-   one owns specific surfaces and is not allowed to leak:
+   ONE visual language. The previous system declared three (brutalist, liquid
+   glass, spatial) and admitted in its own comments that they contradict each
+   other; that contradiction is why nothing had hierarchy.
 
-     BRUTALIST   the structural base. Every panel, table, control and edge.
-                 Hard 2px rules, zero radius, offset shadows, mono labels.
-                 Chosen as the base because it survives dense forensic data
-                 without becoming unreadable.
+   The governing rule of this file:
 
-     LIQUID GLASS  navigation chrome only. Translucency has an actual job
-                 there: showing content moving underneath a fixed bar.
+       CHROME IS NOT DATA.
+       Azure and ember are chrome. Caught / review / evaded are data.
+       A colour never crosses.
 
-     SPATIAL     the attack-sequence visualisation only. Depth is used to
-                 show a payment sequence advancing through time, which a
-                 flat table genuinely cannot express.
+   Consequence: "Run attack" is ember because it IS the red team. Navigation
+   and every interactive affordance is azure. Green appears only inside a
+   number, a bar or a verdict — never on a button, never in the logo.
 
-   One accent (signal green). One radius (zero). One theme (dark).
+   Full rationale and contrast measurements live in DESIGN.md.
    ========================================================================== */
 
 @theme {
-  --color-void: #08080a;
-  --color-ink: #0d0d10;
-  --color-ink-raised: #141419;
-  --color-ink-high: #1c1c23;
-  --color-line: #26262e;
-  --color-line-bright: #3a3a46;
+  /* ---- Surfaces. One cool navy-slate hue family. ---- */
+  --color-base: #0b0e16;
+  --color-raised: #131826;
+  --color-inset: #1a2033;
+  --color-overlay: #222941;
+  --color-edge: #2a3149;          /* 3.0:1 vs base — meets 1.4.11 */
+  --color-edge-strong: #3e4767;
 
-  --color-bone: #f4f4f2;
-  --color-bone-dim: #9d9da6;
-  --color-bone-faint: #6a6a75;
+  /* ---- Text ---- */
+  --color-fg: #f5f7fa;            /* 15.9:1 */
+  --color-fg-muted: #a8b2c8;      /*  7.4:1 */
+  --color-fg-subtle: #7c88a3;     /*  4.6:1 — replaces the old 3.44:1 .tag */
 
-  --color-signal: #4ade80;
-  --color-signal-deep: #1f9d55;
-  --color-warn: #fbbf24;
-  --color-fail: #f87171;
-  --color-info: #60a5fa;
+  /* ---- Teams. Chrome only. ---- */
+  --color-azure: #4b9ef8;         /* blue team · brand · interactive · 6.8:1 */
+  --color-azure-deep: #1e4d8c;
+  --color-ember: #f76b44;         /* red team · attack actions only  · 5.2:1 */
+  --color-ember-deep: #8f3018;
 
+  /* ---- Data. Never in chrome. ---- */
+  --color-caught: #35d6a4;        /*  9.1:1 */
+  --color-review: #f2b43c;        /* 11.4:1 */
+  --color-evaded: #fb6e68;        /*  6.3:1 */
+
+  /* Magnitude. Deliberately OUTSIDE the semantic trio, for bars that encode
+     "how much" and carry no verdict: signal contributions, feature weights,
+     planner candidate scores. A 0.26 contribution is not good or bad, it is
+     large — so it must not be able to read as caught/review/evaded.
+     See tier 5 of the colour rule in DESIGN.md §2. */
+  --color-magnitude: #7f9cc4;     /*  6.9:1 */
+
+  /* ---- Type scale ---- */
+  --text-display: 2.75rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 600;
+
+  --text-h1: 2rem;
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 600;
+
+  --text-h2: 1.25rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 600;
+
+  --text-h3: 0.9375rem;
+  --text-h3--line-height: 1.35;
+  --text-h3--font-weight: 600;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.6;
+
+  --text-body-sm: 0.8125rem;
+  --text-body-sm--line-height: 1.55;
+
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.4;
+  --text-label--font-weight: 500;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.45;
+
+  --text-overline: 0.6875rem;
+  --text-overline--line-height: 1.3;
+  --text-overline--letter-spacing: 0.08em;
+  --text-overline--font-weight: 600;
+
+  /* ---- Radius. Was uniformly 0, which with 2px borders read brutalist. ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* ---- Fonts ---- */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* ---- shadcn bridge ------------------------------------------------------
+     shadcn primitives are written against a fixed set of semantic names. Rather
+     than let them ship their own slate palette alongside ours — which would put
+     two greys in the product — every name is aliased onto a FraudForge token.
+     The primitives therefore inherit this design system rather than compete
+     with it, and there is still exactly one source of colour.
+     ---------------------------------------------------------------------- */
+  --color-background: var(--color-base);
+  --color-foreground: var(--color-fg);
+  --color-card: var(--color-raised);
+  --color-card-foreground: var(--color-fg);
+  --color-popover: var(--color-raised);
+  --color-popover-foreground: var(--color-fg);
+  --color-primary: var(--color-azure);
+  --color-primary-foreground: #06121f;
+  --color-secondary: var(--color-inset);
+  --color-secondary-foreground: var(--color-fg);
+  --color-muted: var(--color-inset);
+  --color-muted-foreground: var(--color-fg-subtle);
+  --color-accent: var(--color-overlay);
+  --color-accent-foreground: var(--color-fg);
+  --color-destructive: var(--color-evaded);
+  --color-destructive-foreground: #1a0703;
+  --color-border: var(--color-edge);
+  --color-input: var(--color-edge);
+  --color-ring: var(--color-azure);
 }
 
-html {
-  background-color: var(--color-void);
-  color-scheme: dark;
-}
-
-body {
-  background-color: var(--color-void);
-  color: var(--color-bone);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-::selection {
-  background: var(--color-signal);
-  color: var(--color-void);
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-signal);
-  outline-offset: 2px;
-}
-
-/* ==========================================================================
-   BRUTALIST BASE
-   ========================================================================== */
-
-.slab {
-  border: 2px solid var(--color-line);
-  background: var(--color-ink-raised);
-}
-
-.slab-lift {
-  box-shadow: 5px 5px 0 0 var(--color-line);
-}
-
-.slab-accent {
-  border-color: var(--color-signal);
-  box-shadow: 5px 5px 0 0 var(--color-signal-deep);
-}
-
-.tag {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1.2;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-bone-faint);
-}
-
-.rule {
-  border-top: 2px solid var(--color-line);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 2px solid var(--color-line-bright);
-  background: var(--color-ink);
-  color: var(--color-bone);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.6rem 1rem;
-  cursor: pointer;
-  transition: transform 0.08s linear, box-shadow 0.08s linear,
-    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.btn:hover:not(:disabled) {
-  border-color: var(--color-bone-faint);
-  background: var(--color-ink-high);
-}
-
-.btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: var(--color-signal);
-  border-color: var(--color-signal);
-  color: var(--color-void);
-  box-shadow: 3px 3px 0 0 var(--color-signal-deep);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-signal);
-  border-color: var(--color-signal);
-}
-
-/* Pressing pushes the control into its own shadow. */
-.btn-primary:active:not(:disabled) {
-  transform: translate(3px, 3px);
-  box-shadow: 0 0 0 0 var(--color-signal-deep);
-}
-
-.btn:not(.btn-primary):active:not(:disabled) {
-  transform: translate(2px, 2px);
-}
-
-.field {
-  width: 100%;
-  border: 2px solid var(--color-line);
-  background: var(--color-ink);
-  color: var(--color-bone);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  padding: 0.55rem 0.7rem;
-  cursor: pointer;
-}
-
-.field:hover {
-  border-color: var(--color-line-bright);
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  background: var(--color-line);
-  cursor: pointer;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 22px;
-  background: var(--color-signal);
-  border: 2px solid var(--color-void);
-  cursor: grab;
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 22px;
-  border-radius: 0;
-  background: var(--color-signal);
-  border: 2px solid var(--color-void);
-  cursor: grab;
+:root {
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 250ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ==========================================================================
-   LIQUID GLASS  -  navigation chrome only
-
-   A web approximation using backdrop-filter plus layered borders and an
-   inner highlight. This is not Apple's Liquid Glass, which is a native
-   platform material; it is the honest web equivalent.
+   Base
    ========================================================================== */
 
-.glass {
-  background: linear-gradient(
-      180deg,
-      rgb(255 255 255 / 0.06),
-      rgb(255 255 255 / 0.015)
-    ),
-    rgb(13 13 16 / 0.72);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-bottom: 2px solid var(--color-line);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
+/* Everything below lives in a cascade layer so Tailwind utilities can win.
+
+   Unlayered CSS beats every layered rule regardless of specificity. With these
+   rules written outside a layer, `.card` silently overrode
+   `hover:border-azure/45` — and would have overridden any utility touching a
+   property a component class already sets. `base` and `components` restore the
+   normal contract: component classes are the default, utilities are the escape
+   hatch. The print and reduced-motion blocks stay unlayered on purpose, because
+   those must win over everything. */
+@layer base {
+  html {
+    background-color: var(--color-base);
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-base);
+    color: var(--color-fg);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-azure);
+    color: var(--color-base);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-azure);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
 }
 
-.glass-rail {
-  background: linear-gradient(
-      100deg,
-      rgb(255 255 255 / 0.05),
-      rgb(255 255 255 / 0.01)
-    ),
-    rgb(13 13 16 / 0.78);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-right: 2px solid var(--color-line);
-  box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.05);
-}
+/* Numbers must not jitter between renders, and columns must align. */
+@layer components {
+  .tnum,
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
 
-/* Blur is a luxury, not a requirement. Fall back to a solid fill. */
-@media (prefers-reduced-transparency: reduce) {
-  .glass,
-  .glass-rail {
-    background: var(--color-ink);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+  /* First in tab order. */
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: -100px;
+    z-index: 100;
+    border-radius: var(--radius-sm);
+    background: var(--color-azure);
+    color: var(--color-base);
+    padding: 0.6rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: top var(--dur-fast) var(--ease);
+  }
+
+  .skip-link:focus {
+    top: 12px;
+  }
+
+  /* ==========================================================================
+     Typography roles
+
+     The old `.tag` was 10px / #6a6a75 / 0.16em uppercase, used 57 times as the
+     form-label, the column-header, the stat-caption AND the footnote, and it
+     measured 3.44:1 — a WCAG AA failure in every one of those places. It is
+     replaced by four roles that each do one job and all clear 4.5:1.
+     ========================================================================== */
+
+  .label {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 500;
+    color: var(--color-fg-muted);
+  }
+
+  .caption {
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--color-fg-subtle);
+  }
+
+  .col-head {
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--color-fg-subtle);
+  }
+
+  .overline {
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-fg-subtle);
+  }
+
+  .prose-measure {
+    max-width: 68ch;
+  }
+
+  /* ==========================================================================
+     Surfaces. Elevation comes from background steps, not offset shadows.
+     ========================================================================== */
+
+  .card {
+    border: 1px solid var(--color-edge);
+    border-radius: var(--radius-md);
+    background: var(--color-raised);
+  }
+
+  .card-lg {
+    border: 1px solid var(--color-edge);
+    border-radius: var(--radius-lg);
+    background: var(--color-raised);
+  }
+
+  .well {
+    border: 1px solid var(--color-edge);
+    border-radius: var(--radius-sm);
+    background: var(--color-inset);
+  }
+
+  /* The single most important object on a page. Used at most once per view. */
+  .card-accent {
+    border-color: color-mix(in oklab, var(--color-azure) 45%, transparent);
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--color-azure) 7%, transparent),
+        transparent 42%
+      ),
+      var(--color-raised);
+  }
+
+  .divide-edge > * + * {
+    border-top: 1px solid var(--color-edge);
+  }
+
+  /* ==========================================================================
+     Controls
+     ========================================================================== */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-edge-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-inset);
+    color: var(--color-fg);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.55rem 0.9rem;
+    min-height: 36px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background-color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease),
+      transform var(--dur-fast) var(--ease);
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--color-overlay);
+    border-color: var(--color-fg-subtle);
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Azure = the blue team, and every ordinary primary action. */
+  .btn-primary {
+    background: var(--color-azure);
+    border-color: var(--color-azure);
+    color: #06121f;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-azure) 88%, white);
+    border-color: color-mix(in oklab, var(--color-azure) 88%, white);
+  }
+
+  /* Ember = the red team. Reserved for actions that ARE an attack. */
+  .btn-attack {
+    background: var(--color-ember);
+    border-color: var(--color-ember);
+    color: #1a0703;
+    font-weight: 600;
+  }
+
+  .btn-attack:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-ember) 88%, white);
+    border-color: color-mix(in oklab, var(--color-ember) 88%, white);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-fg-muted);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-overlay);
+    border-color: var(--color-edge);
+    color: var(--color-fg);
+  }
+
+  .btn-sm {
+    padding: 0.35rem 0.65rem;
+    min-height: 30px;
+    font-size: 0.75rem;
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-edge);
+    border-radius: var(--radius-sm);
+    background: var(--color-inset);
+    color: var(--color-fg);
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.7rem;
+    min-height: 36px;
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease);
+  }
+
+  .field:hover {
+    border-color: var(--color-edge-strong);
+  }
+
+  /* Range inputs keep a native element for keyboard support, restyled. */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 20px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--color-overlay);
+  }
+
+  input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--color-overlay);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--color-azure);
+    border: 2px solid var(--color-base);
+    box-shadow: 0 0 0 1px var(--color-azure);
+    transition: transform var(--dur-fast) var(--ease);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--color-azure);
+    border: 2px solid var(--color-base);
+    box-shadow: 0 0 0 1px var(--color-azure);
+  }
+
+  input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+
+  input[type="range"]:focus-visible {
+    outline: none;
+  }
+
+  input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow:
+      0 0 0 1px var(--color-azure),
+      0 0 0 4px color-mix(in oklab, var(--color-azure) 40%, transparent);
+  }
+
+  /* ==========================================================================
+     Navigation chrome. A single translucent surface, not a separate "language".
+     ========================================================================== */
+
+  .chrome {
+    background: color-mix(in oklab, var(--color-base) 82%, transparent);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .chrome {
+      background: var(--color-base);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-caught);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-caught) 55%, transparent);
+    animation: pulse 2.6s ease-out infinite;
+  }
+
+  @keyframes pulse {
+    70% {
+      box-shadow: 0 0 0 7px transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  /* ==========================================================================
+     MOTION MOMENT 1  —  Cockpit hero only.
+
+     A dot grid and a slow azure-to-ember sweep: the two teams meeting. Pure
+     CSS, no JS loop, no canvas, no resize listener. Budget ceiling from
+     DESIGN.md §9.
+     ========================================================================== */
+
+  .hero-field {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+  }
+
+  .hero-field::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-image: radial-gradient(var(--color-edge) 1px, transparent 1px);
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 75%);
+  }
+
+  .hero-field::after {
+    content: "";
+    position: absolute;
+    inset: -40% -10% auto -10%;
+    height: 340px;
+    z-index: -1;
+    background:
+      radial-gradient(
+        42% 60% at 22% 50%,
+        color-mix(in oklab, var(--color-azure) 22%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        38% 55% at 78% 45%,
+        color-mix(in oklab, var(--color-ember) 15%, transparent),
+        transparent 70%
+      );
+    filter: blur(38px);
+    animation: sweep 18s ease-in-out infinite alternate;
+  }
+
+  @keyframes sweep {
+    from {
+      transform: translate3d(-3%, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(3%, 0, 0) scale(1.07);
+    }
+  }
+
+  /* ==========================================================================
+     Data visualisation
+     ========================================================================== */
+
+  .bar-track {
+    position: relative;
+    height: 6px;
+    flex: 1;
+    border-radius: 999px;
+    background: var(--color-overlay);
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width var(--dur-slow) var(--ease);
+  }
+
+  /* Thresholds are drawn, never implied. */
+  .threshold-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-fg-subtle);
+    opacity: 0.55;
+  }
+
+  /* ==========================================================================
+     Even-edge card grid
+
+     A fixed 3-column grid left five of six Identify sections ending on a
+     half-empty row, because the category counts are 8, 4, 4, 6, 3, 3. The
+     broken right edge repeated all the way down the page.
+
+     Two mechanisms, so no count can produce a hole:
+       1. --cols is chosen per section to minimise the remainder (see
+          bestColumns() in app/identify/page.jsx), which clears every current
+          count outright.
+       2. If a remainder ever does occur, the trailing cards grow to fill the
+          row instead of leaving gaps.
+     ========================================================================== */
+
+  .even-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .even-grid > * {
+    flex: 1 1 calc((100% - (var(--cols) - 1) * 0.75rem) / var(--cols));
+    min-width: min(240px, 100%);
+    max-width: 100%;
+  }
+
+  .zebra tbody tr:nth-child(even) {
+    background: color-mix(in oklab, var(--color-inset) 55%, transparent);
+  }
+
+  .skeleton {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+      90deg,
+      var(--color-inset) 25%,
+      var(--color-overlay) 50%,
+      var(--color-inset) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+
+  @keyframes shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Very fine grain, well below the content layer so it never veils text.
+     The previous overlay sat at z-index 60 above everything at 0.2 opacity. */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
   }
 }
 
 /* ==========================================================================
-   SPATIAL  -  attack sequence only
-
-   Depth conveys time: each payment sits further back along the sequence.
-   Transform-only so it stays on the compositor.
+   Reduced motion. Every moment degrades to its static end state.
    ========================================================================== */
-
-.spatial-stage {
-  perspective: 1400px;
-  perspective-origin: 50% 40%;
-}
-
-.spatial-card {
-  transform-style: preserve-3d;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.2s ease, box-shadow 0.2s ease;
-  will-change: transform;
-}
-
-.spatial-stage:hover .spatial-card {
-  transform: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .spatial-card {
-    transform: none !important;
-    transition: none;
+  html {
+    scroll-behavior: auto;
   }
-  .btn:active:not(:disabled) {
-    transform: none;
+
+  .hero-field::after {
+    animation: none;
   }
+
+  .skeleton {
+    animation: none;
+  }
+
   *,
   *::before,
   *::after {
@@ -275,39 +658,10 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
-/* Live indicator. The one round shape in the system, because a dot is a dot. */
-.pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: var(--color-signal);
-  box-shadow: 0 0 0 0 rgb(74 222 128 / 0.55);
-  animation: pulse 2.4s ease-out infinite;
-}
-
-@keyframes pulse {
-  70% {
-    box-shadow: 0 0 0 7px rgb(74 222 128 / 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgb(74 222 128 / 0);
-  }
-}
-
-/* Fine grain, fixed and non-interactive so it never repaints on scroll. */
-.grain::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.2;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
-}
-
 /* ==========================================================================
-   Print
+   Print. The incident report is meant to be printed; retuned to new tokens.
    ========================================================================== */
+
 @media print {
   header,
   footer,
@@ -326,8 +680,12 @@ input[type="range"]::-moz-range-thumb {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     box-shadow: none !important;
-    border-color: #bbb !important;
+    border-color: #ccc !important;
     backdrop-filter: none !important;
+  }
+
+  .grain::after {
+    display: none !important;
   }
 
   main {
@@ -335,12 +693,15 @@ input[type="range"]::-moz-range-thumb {
     padding: 0 !important;
   }
 
-  .slab,
+  .card,
+  .card-lg,
+  .well,
   section,
   table,
   tr {
     break-inside: avoid;
     page-break-inside: avoid;
+    background: #fff !important;
   }
 
   thead {

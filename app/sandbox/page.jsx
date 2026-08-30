@@ -1,7 +1,38 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Shell, Panel, Stat, Verdict, ErrorNote, PageHead, Bar, pct, money } from "@/components/shell";
+import {
+  Shell, Panel, Stat, Verdict, ErrorNote, PageHead, Bar, Footnote,
+  Hint, Skeleton, AccentScope, DEFS, pct, money,
+} from "@/components/shell";
+import { Slider } from "@/components/ui/slider";
+import { rateTone, costTone, scoreTone, verdictFor } from "@/lib/tone";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
+/** One labelled slider row: label, live value, and the control. */
+function Control({ label, value, display, min, max, step, onChange, hint }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <span className="label flex items-center gap-1.5">
+          {label}
+          {hint ? <Hint>{hint}</Hint> : null}
+        </span>
+        <span className="font-mono text-[13px] font-semibold text-fg tabular-nums">
+          {display}
+        </span>
+      </div>
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={([v]) => onChange(v)}
+        aria-label={label}
+      />
+    </div>
+  );
+}
 
 export default function Sandbox() {
   /* ---- 1. Manual scorer ------------------------------------------------ */
@@ -84,9 +115,17 @@ export default function Sandbox() {
     ["Hour of day", "hour", 0, 23, 1, (v) => `${String(v).padStart(2, "0")}:00`],
   ];
 
+  const FLAGS = [
+    ["New payee", "isNewPayee"],
+    ["Cross-border", "isInternational"],
+    ["New device", "isNewDevice"],
+  ];
+
+  const activeFlags = FLAGS.filter(([, k]) => f[k]).map(([, k]) => k);
+
   return (
     <Shell>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <ErrorNote>{error}</ErrorNote>
 
         <PageHead kicker="Analysis" title="Push on it yourself">
@@ -95,160 +134,282 @@ export default function Sandbox() {
           realistic fraud base rate and see what survives.
         </PageHead>
 
-        {/* ── Manual scorer ─────────────────────────────────────────── */}
-        <div className="grid gap-4 lg:grid-cols-12">
-          <Panel title="Build a payment" className="lg:col-span-5">
-            <div className="space-y-4">
-              {SLIDERS.map(([label, key, min, max, step, fmt]) => (
-                <label key={key} className="block">
-                  <span className="mb-1.5 flex items-baseline justify-between">
-                    <span className="tag">{label}</span>
-                    <span className="font-mono text-xs font-bold text-signal">{fmt(f[key])}</span>
-                  </span>
-                  <input type="range" min={min} max={max} step={step} value={f[key]}
-                    onChange={(e) => set(key, Number(e.target.value))} />
-                </label>
-              ))}
-              <div className="flex flex-wrap gap-2 border-t-2 border-line pt-3">
-                {[["New payee", "isNewPayee"], ["Cross-border", "isInternational"], ["New device", "isNewDevice"]].map(
-                  ([label, key]) => (
-                    <button key={key} type="button" onClick={() => set(key, !f[key])} aria-pressed={f[key]}
-                      className={`btn !px-2.5 !py-1.5 ${f[key] ? "btn-primary" : ""}`}>
-                      {label}
-                    </button>
-                  )
-                )}
+        {/* ── 1 · AI Defense Lab ────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <Stage n={1} title="Score a payment you build by hand"
+            blurb="Both detectors run live on every change." />
+
+          <div className="grid gap-4 lg:grid-cols-12">
+            <Panel title="Build a payment" className="lg:col-span-5">
+              <div className="space-y-5">
+                {SLIDERS.map(([label, key, min, max, step, fmt]) => (
+                  <Control
+                    key={key}
+                    label={label}
+                    value={f[key]}
+                    display={fmt(f[key])}
+                    min={min}
+                    max={max}
+                    step={step}
+                    onChange={(v) => set(key, v)}
+                  />
+                ))}
+
+                <div className="border-t border-edge pt-4">
+                  <p className="label mb-2.5">Signals present</p>
+                  <ToggleGroup
+                    type="multiple"
+                    value={activeFlags}
+                    onValueChange={(next) => {
+                      FLAGS.forEach(([, k]) => set(k, next.includes(k)));
+                    }}
+                    className="flex flex-wrap justify-start gap-1.5"
+                  >
+                    {FLAGS.map(([label, key]) => (
+                      <ToggleGroupItem
+                        key={key}
+                        value={key}
+                        className="rounded-sm border border-edge px-3"
+                      >
+                        {label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
               </div>
-            </div>
-          </Panel>
+            </Panel>
 
-          <Panel title="Both detectors, live" className="lg:col-span-7">
-            {scored ? (
-              <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Stat label="Risk score" value={scored.hardened.score.toFixed(2)}
-                    note={`confidence ${scored.hardened.confidenceLevel.toLowerCase()}`}
-                    tone={scored.hardened.flagged ? "signal" : "fail"} />
-                  <div className="slab p-4">
-                    <p className="tag">Hardened</p>
-                    <p className="mt-2">
-                      <Verdict action={scored.hardened.action === "block" ? "BLOCK" : scored.hardened.action === "review" ? "STEP_UP" : "ALLOW"} />
-                    </p>
-                    <p className="mt-2 text-[11px] text-bone-dim">
-                      {(f.amount / f.amountBaseline).toFixed(2)}x this account&apos;s baseline
-                    </p>
+            <Panel title="Both detectors, live" className="lg:col-span-7">
+              {scored ? (
+                <div className="space-y-5">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {/* A score and the action it produced are ONE event, so they
+                        carry one colour. 0.70 leading to STEP_UP renders amber,
+                        not green sitting beside an amber badge. */}
+                    <Stat
+                      emphasis
+                      label="Risk score"
+                      value={scored.hardened.score.toFixed(2)}
+                      note={`confidence ${scored.hardened.confidenceLevel.toLowerCase()}`}
+                      tone={scoreTone(verdictFor(scored.hardened.action))}
+                    />
+                    <div className="card p-4">
+                      <p className="label">Hardened</p>
+                      <p className="mt-2.5">
+                        <Verdict action={verdictFor(scored.hardened.action)} />
+                      </p>
+                      <p className="caption mt-2.5">
+                        {(f.amount / f.amountBaseline).toFixed(2)}x this account&apos;s baseline
+                      </p>
+                    </div>
+                    <div className="card p-4">
+                      <p className="label">Legacy rules</p>
+                      <p className="mt-2.5">
+                        <Verdict action={scored.legacy.flagged ? "FLAG" : "MISS"} />
+                      </p>
+                      <p className="caption mt-2.5">{scored.legacy.reasons[0]}</p>
+                    </div>
                   </div>
-                  <div className="slab p-4">
-                    <p className="tag">Legacy rules</p>
-                    <p className="mt-2"><Verdict action={scored.legacy.flagged ? "FLAG" : "MISS"} /></p>
-                    <p className="mt-2 text-[11px] text-bone-dim">{scored.legacy.reasons[0]}</p>
+
+                  <div>
+                    <p className="label mb-2.5">Signal contributions</p>
+                    <div className="space-y-2.5">
+                      {Object.entries(scored.hardened.contributions).length === 0 ? (
+                        <p className="text-body-sm text-fg-subtle">
+                          Nothing cleared its reporting floor.
+                        </p>
+                      ) : (
+                        Object.entries(scored.hardened.contributions)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([k, v]) => (
+                            <div key={k} className="flex items-center gap-3 text-body-sm">
+                              <span className="w-28 shrink-0 capitalize text-fg-muted">
+                                {k.replace(/_/g, " ")}
+                              </span>
+                              <Bar value={v} max={0.35} />
+                              <span className="w-12 shrink-0 text-right font-mono text-[12px] font-semibold tabular-nums">
+                                +{v.toFixed(2)}
+                              </span>
+                            </div>
+                          ))
+                      )}
+                    </div>
                   </div>
+
+                  <p className="caption border-t border-edge pt-3">
+                    {scored.hardened.reasons.join(" · ")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="card p-4">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="mt-3 h-6 w-20" />
+                      </div>
+                    ))}
+                  </div>
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              )}
+            </Panel>
+          </div>
+        </section>
+
+        {/* ── 2 · Policy tuner ──────────────────────────────────────────── */}
+        <section className="space-y-4">
+          <Stage n={2} title="Move the decision threshold"
+            blurb="The threshold is a business decision, not a property of the model." />
+
+          <Panel>
+            {policy && curve ? (
+              <div className="space-y-5">
+                <div className="max-w-md">
+                  <Control
+                    label="Review threshold"
+                    value={threshold}
+                    display={threshold.toFixed(2)}
+                    min={0.05}
+                    max={0.95}
+                    step={0.01}
+                    onChange={setThreshold}
+                  />
                 </div>
 
-                <div>
-                  <p className="tag mb-2.5">Signal contributions</p>
-                  <div className="space-y-2">
-                    {Object.entries(scored.hardened.contributions).length === 0 ? (
-                      <p className="text-xs text-bone-dim">Nothing cleared its reporting floor.</p>
-                    ) : (
-                      Object.entries(scored.hardened.contributions).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
-                        <div key={k} className="flex items-center gap-3 text-xs">
-                          <span className="w-28 shrink-0 capitalize text-bone-dim">{k.replace(/_/g, " ")}</span>
-                          <Bar value={v} max={0.35} />
-                          <span className="w-12 shrink-0 text-right font-mono font-bold text-signal">+{v.toFixed(2)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  <Stat label="Recall" value={pct(policy.recall)}
+                    note={`${policy.tp} of ${policy.tp + policy.fn}`}
+                    tone={rateTone(policy.recall)} hint={DEFS.recall} />
+                  <Stat label="Precision" value={pct(policy.precision)}
+                    note="alerts that are fraud" tone={rateTone(policy.precision)}
+                    hint={DEFS.precision} />
+                  <Stat label="False positives" value={policy.fp}
+                    note={pct(policy.fpr, 2)}
+                    tone={costTone(policy.fpr, { warn: 0.005, bad: 0.02 })}
+                    hint={DEFS.fpr} />
+                  <Stat label="Review load" value={pct(policy.reviewLoad)}
+                    note="of all payments"
+                    tone={costTone(policy.reviewLoad, { warn: 0.05, bad: 0.25 })} />
+                  <Stat label="Fraud value missed" value={money(policy.missedValue)}
+                    note={`${policy.fn} payments`}
+                    tone={costTone(policy.fn / Math.max(1, policy.tp + policy.fn),
+                                   { warn: 0.05, bad: 0.34 })} />
                 </div>
 
-                <p className="border-t-2 border-line pt-3 font-mono text-[10px] leading-relaxed text-bone-faint">
-                  {scored.hardened.reasons.join(" · ")}
-                </p>
+                <Footnote>
+                  Corpus: {curve.fraud} fraudulent, {curve.legit} legitimate, seed {curve.seed}.
+                  Lowering the threshold catches more fraud and raises the review load on the
+                  same curve. There is no setting that improves both.
+                </Footnote>
               </div>
             ) : (
-              <p className="text-xs text-bone-dim">Scoring…</p>
+              <div className="space-y-4">
+                <Skeleton className="h-5 w-64" />
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div key={i} className="card p-4">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="mt-3 h-6 w-20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </Panel>
-        </div>
+        </section>
 
-        {/* ── Policy tuner ──────────────────────────────────────────── */}
-        <Panel title="Policy tuner"
-          description="The threshold is a business decision, not a property of the model. Move it and watch what you buy and what you pay for it.">
-          {policy && curve ? (
-            <div className="space-y-5">
-              <label className="block">
-                <span className="mb-2 flex items-baseline justify-between">
-                  <span className="tag">Review threshold</span>
-                  <span className="font-mono text-lg font-bold text-signal">{threshold.toFixed(2)}</span>
-                </span>
-                <input type="range" min={0.05} max={0.95} step={0.01} value={threshold}
-                  onChange={(e) => setThreshold(Number(e.target.value))} />
-              </label>
+        {/* ── 3 · Reality check ─────────────────────────────────────────
+            The most important argument on the site, so it gets the accent
+            treatment that nothing else on this page gets. */}
+        <section className="space-y-4">
+          <Stage
+            n={3}
+            title="What those rates mean at a real base rate"
+            blurb="Fraud is rare. A detector that looks strong on a balanced corpus can still bury an analyst team once true prevalence is applied."
+            accent
+          />
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                <Stat label="Recall" value={pct(policy.recall)} note={`${policy.tp} of ${policy.tp + policy.fn}`} tone="signal" />
-                <Stat label="Precision" value={pct(policy.precision)} note="alerts that are fraud" />
-                <Stat label="False positives" value={policy.fp} note={pct(policy.fpr, 2)} tone={policy.fpr > 0.02 ? "fail" : "warn"} />
-                <Stat label="Review load" value={pct(policy.reviewLoad)} note="of all payments" tone="warn" />
-                <Stat label="Fraud value missed" value={money(policy.missedValue)} note={`${policy.fn} payments`} tone="fail" />
-              </div>
-
-              <p className="font-mono text-[10px] leading-relaxed text-bone-faint">
-                Corpus: {curve.fraud} fraudulent, {curve.legit} legitimate, seed {curve.seed}.
-                Lowering the threshold catches more fraud and raises the review load on the same
-                curve. There is no setting that improves both.
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs text-bone-dim">Scoring corpus…</p>
-          )}
-        </Panel>
-
-        {/* ── Base rate ─────────────────────────────────────────────── */}
-        <Panel title="What those rates mean at a real base rate"
-          description="Fraud is rare. A detector that looks strong on a balanced corpus can still bury an analyst team once true prevalence is applied.">
           {base && policy ? (
-            <div className="space-y-5">
-              <div className="grid gap-5 lg:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 flex items-baseline justify-between">
-                    <span className="tag">Fraud prevalence</span>
-                    <span className="font-mono text-sm font-bold text-signal">{(prevalence * 100).toFixed(2)}%</span>
-                  </span>
-                  <input type="range" min={0.0002} max={0.02} step={0.0002} value={prevalence}
-                    onChange={(e) => setPrevalence(Number(e.target.value))} />
-                </label>
-                <label className="block">
-                  <span className="mb-2 flex items-baseline justify-between">
-                    <span className="tag">Monthly payment volume</span>
-                    <span className="font-mono text-sm font-bold text-signal">{volume.toLocaleString()}</span>
-                  </span>
-                  <input type="range" min={100000} max={5000000} step={100000} value={volume}
-                    onChange={(e) => setVolume(Number(e.target.value))} />
-                </label>
+            <AccentScope className="p-5">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Control
+                  label="Fraud prevalence"
+                  value={prevalence}
+                  display={`${(prevalence * 100).toFixed(2)}%`}
+                  min={0.0002}
+                  max={0.02}
+                  step={0.0002}
+                  onChange={setPrevalence}
+                  hint={DEFS.baseRate}
+                />
+                <Control
+                  label="Monthly payment volume"
+                  value={volume}
+                  display={volume.toLocaleString()}
+                  min={100000}
+                  max={5000000}
+                  step={100000}
+                  onChange={setVolume}
+                />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Stat label="Fraud in the stream" value={Math.round(base.fraudCount).toLocaleString()} note="per month" />
-                <Stat label="Alerts raised" value={Math.round(base.alerts).toLocaleString()} note={`${Math.round(base.falsePos).toLocaleString()} of them false`} tone="warn" />
-                <Stat label="Real-world precision" value={pct(base.realPrecision)}
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Neutral facts: how much fraud exists and how many alerts
+                    fire are counts, not judgements. Colouring them diluted the
+                    one number on this page that carries the argument. */}
+                <Stat label="Fraud in the stream"
+                  value={Math.round(base.fraudCount).toLocaleString()} note="per month" />
+                <Stat label="Alerts raised"
+                  value={Math.round(base.alerts).toLocaleString()}
+                  note={`${Math.round(base.falsePos).toLocaleString()} of them false`} />
+                <Stat emphasis label="Real-world precision" value={pct(base.realPrecision)}
                   note={`vs ${pct(policy.precision)} on the balanced corpus`}
-                  tone={base.realPrecision < 0.3 ? "fail" : "signal"} />
-                <Stat label="Analyst-days per month" value={Math.round(base.analystDays).toLocaleString()} note="at 250 reviews per day" tone="warn" />
+                  tone={rateTone(base.realPrecision)} />
+                <Stat label="Analyst-days per month"
+                  value={Math.round(base.analystDays).toLocaleString()}
+                  note="at 250 reviews per day"
+                  tone={costTone(base.analystDays, { warn: 20, bad: 100 })} />
               </div>
 
-              <p className="font-mono text-[10px] leading-relaxed text-bone-faint">
+              <p className="prose-measure mt-5 border-t border-edge pt-4 text-body-sm text-fg-muted">
                 At {(prevalence * 100).toFixed(2)}% prevalence the same detector that scores{" "}
-                {pct(policy.precision)} precision on a balanced corpus scores {pct(base.realPrecision)}{" "}
+                <span className="font-mono text-fg tabular-nums">{pct(policy.precision)}</span>{" "}
+                precision on a balanced corpus scores{" "}
+                <span className={`font-mono font-semibold tabular-nums ${
+                  { caught: "text-caught", review: "text-review", evaded: "text-evaded" }[
+                    rateTone(base.realPrecision)
+                  ]
+                }`}>
+                  {pct(base.realPrecision)}
+                </span>{" "}
                 in production, because almost every payment it sees is legitimate. This is the
                 base-rate problem, and it is the most common way a fraud model looks good in
                 evaluation and fails in operation.
               </p>
-            </div>
+            </AccentScope>
           ) : null}
-        </Panel>
+        </section>
       </div>
     </Shell>
+  );
+}
+
+/** Numbered stage header, so three tools read as a sequence not a pile. */
+function Stage({ n, title, blurb, accent = false }) {
+  return (
+    <div className="flex items-start gap-3.5">
+      <span
+        className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[12px] font-semibold ${
+          accent ? "bg-azure/18 text-azure" : "bg-inset text-fg-muted"
+        }`}
+      >
+        {n}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-h2">{title}</h2>
+        <p className="prose-measure mt-1 text-body-sm text-fg-subtle">{blurb}</p>
+      </div>
+    </div>
   );
 }
