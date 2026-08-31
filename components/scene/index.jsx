@@ -1,40 +1,56 @@
 "use client";
 
-/**
- * Lazy boundary for the Cockpit ambient scene.
- *
- * three + @react-three/fiber + drei are far too heavy to sit in the initial
- * bundle for a page whose job is to show fraud numbers, so the scene is
- * dynamically imported with `ssr: false` and nothing is fetched until after
- * the page is interactive. Until then — and forever, if WebGL is unavailable
- * or the import fails — the hero renders exactly as it did before.
- */
-
-import dynamic from "next/dynamic";
-
-const AccountScene = dynamic(() => import("./account-scene"), {
-  ssr: false,
-  loading: () => null,
-});
+import { useEffect, useRef } from "react";
 
 export function CockpitScene() {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      video.defaultMuted = true;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // Autoplay fallback: muted autoplay is supported in all modern browsers
+        });
+      }
+    }
+  }, []);
+
   return (
     <div
       aria-hidden
-      // Right half of the hero, which was empty space before. Sits behind the
-      // text and never over the controls: no pointer events, and the hero's
-      // own content stacks above it.
-      className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] max-w-[520px] lg:block"
+      className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[50%] max-w-[560px] items-center justify-center overflow-hidden lg:flex"
       style={{
-        // Fades into the panel on the left so it reads as part of the surface
-        // rather than a pasted-on widget, and never competes with the headline.
         maskImage:
-          "linear-gradient(to right, transparent 0%, transparent 12%, #000 52%, #000 100%)",
+          "linear-gradient(to right, transparent 0%, transparent 4%, #000 24%, #000 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%)",
         WebkitMaskImage:
-          "linear-gradient(to right, transparent 0%, transparent 12%, #000 52%, #000 100%)",
+          "linear-gradient(to right, transparent 0%, transparent 4%, #000 24%, #000 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%)",
+        maskComposite: "intersect",
+        WebkitMaskComposite: "source-in",
       }}
     >
-      <AccountScene />
+      {/* Ambient bloom back-layer for warm radiance */}
+      <div className="absolute inset-0 z-0 bg-radial from-signal/15 via-flame/5 to-transparent blur-2xl" />
+
+      {/* Continuously looping video at original dimensions */}
+      <div className="relative z-1 flex h-full w-full items-center justify-center">
+        <video
+          ref={videoRef}
+          src="/this.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="h-full w-full object-contain object-right mix-blend-screen scale-105"
+        />
+
+        {/* Localized watermark overlay in the bottom right corner */}
+        <div className="pointer-events-none absolute bottom-1 right-2 h-10 w-24 bg-bg/95 blur-sm" />
+      </div>
     </div>
   );
 }

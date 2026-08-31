@@ -20,7 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Spotlight } from "@/components/aceternity";
+import { Spotlight, SparklesCore } from "@/components/aceternity";
 
 /* Navigation is grouped so the rail reads as a process, not a flat list. The
    old second line on every item ("Pillar 1", "Analysis", "Evidence") exposed an
@@ -238,10 +238,12 @@ export function PageHero({ children, className = "" }) {
   return (
     <div className={`hero-field relative px-5 py-8 lg:px-9 lg:py-10 ${className}`}>
       <Spotlight />
+      <SparklesCore particleDensity={14} minSize={0.6} maxSize={1.8} />
       <div className="relative z-1">{children}</div>
     </div>
   );
 }
+
 
 /**
  * PageHead.

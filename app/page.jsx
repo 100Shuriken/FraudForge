@@ -11,7 +11,8 @@ import { SpatialSequence, SequenceDetail } from "@/components/sequence";
 import { rateTone, countTone, costTone } from "@/lib/tone";
 import { labelFor } from "@/lib/taxonomy";
 import { CockpitScene } from "@/components/scene";
-import { Spotlight } from "@/components/aceternity";
+import { Spotlight, SparklesCore, Meteors } from "@/components/aceternity";
+import { Marquee } from "@/components/magic";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -98,8 +99,10 @@ export default function Cockpit() {
             Pure CSS, no JS loop. Budget in DESIGN.md §9. */}
         <div className="hero-field relative px-5 py-8 lg:px-9 lg:py-11">
           <Spotlight />
+          <Meteors number={12} />
+          <SparklesCore particleDensity={18} minSize={0.8} maxSize={2.2} />
           <CockpitScene />
-          <div className="relative z-1">
+          <div className="relative z-1 max-w-[620px]">
           <PageHead
             kicker="The closed loop"
             title="Attack an account. Watch both detectors score it."
@@ -126,6 +129,27 @@ export default function Cockpit() {
             account&apos;s own baseline.
           </PageHead>
           </div>
+        </div>
+
+        {/* ── Live Telemetry Marquee ────────────────────────────────────── */}
+        <div className="overflow-hidden rounded-md border border-edge/60 bg-inset/40 py-2">
+          <Marquee pauseOnHover className="[--duration:32s]">
+            {[
+              { tag: "DEFENSE", text: "Hardened detector actively scoring against account baseline" },
+              { tag: "RED TEAM", text: "Oblique multi-step sequences bypass static threshold rules" },
+              { tag: "PILLARS", text: "Identify 28 Vectors → Generate Sequences → Defend Models" },
+              { tag: "GFF 2026", text: "Closed-loop adversarial evaluation with synthetic traffic" },
+              { tag: "TELEMETRY", text: "Real-time decision boundary & feature attribution" },
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2.5 px-4 text-[12px]">
+                <span className="rounded bg-signal/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-signal ring-1 ring-signal/30">
+                  {item.tag}
+                </span>
+                <span className="text-fg-muted">{item.text}</span>
+                <span className="text-edge-strong">·</span>
+              </div>
+            ))}
+          </Marquee>
         </div>
 
         {/* ── Controls ─────────────────────────────────────────────────── */}

@@ -687,6 +687,74 @@
     to   { transform: translate3d(4%, 0, 0) scale(1.08); }
   }
 
+  @keyframes meteor {
+    0% {
+      transform: rotate(215deg) translateX(0);
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(215deg) translateX(-600px);
+      opacity: 0;
+    }
+  }
+
+  .animate-meteor-effect {
+    animation: meteor 5s linear infinite;
+  }
+
+  @keyframes ripple {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(0.92);
+    }
+  }
+
+  .animate-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: ripple 4s ease-in-out infinite;
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap, 1rem)));
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap, 1rem)));
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee var(--duration, 40s) linear infinite;
+  }
+
+  .animate-marquee-vertical {
+    animation: marquee-vertical var(--duration, 40s) linear infinite;
+  }
+
+  @keyframes shimmer-slide {
+    to {
+      transform: translate(calc(100% - 100%), 0);
+    }
+  }
+
+
 
   /* ==========================================================================
      Data visualisation

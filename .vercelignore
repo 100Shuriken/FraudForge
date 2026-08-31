@@ -12,5 +12,4 @@
 # Local verification harness — never runs in the Vercel build.
 /tools/checks/
 
-# Reference clip for the hero animation. Kept on disk, never shipped.
-/this.mp4
+

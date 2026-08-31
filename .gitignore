@@ -2,14 +2,11 @@ node_modules
 .next
 out
 .vercel
-# Every env form, not just *.local. A bare `.env` and `.env.production` were
-# NOT covered before, so the first one anyone created would have been committed.
+
+# Environment variables & secrets
 .env
 .env.*
 !.env.example
-
-
-.vercel
 
 # Design review captures. Regenerate with `npm run capture`.
 design-baseline/
@@ -24,10 +21,16 @@ CLAUDE.md
 # Local Python service (deployed separately to Render).
 AI-Defense-Lab*/
 
-# Reference footage, kept locally.
+# Root reference footage, kept locally.
 /this.mp4
 
-# Credential material. Nothing here has ever been committed; this keeps it that way.
+# OS & Editor temporary files
+~$*
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Credential material & secret keys
 *.pem
 *.key
 *.p12

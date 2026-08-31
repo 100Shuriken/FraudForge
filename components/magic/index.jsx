@@ -147,3 +147,181 @@ export function BorderBeam({
     </div>
   );
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Marquee — infinite smooth horizontal scroll for live attack feeds.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function Marquee({
+  className,
+  reverse = false,
+  pauseOnHover = true,
+  children,
+  vertical = false,
+  repeat = 4,
+  ...props
+}) {
+  const reduced = useReducedMotion();
+
+  if (reduced) {
+    return (
+      <div
+        className={cn(
+          "flex overflow-x-auto gap-4 p-2 [scrollbar-width:none]",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      {...props}
+      className={cn(
+        "group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem] [gap:var(--gap)]",
+        {
+          "flex-row": !vertical,
+          "flex-col": vertical,
+        },
+        className
+      )}
+    >
+      {Array(repeat)
+        .fill(0)
+        .map((_, i) => (
+          <div
+            key={i}
+            className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+              "animate-marquee flex-row": !vertical,
+              "animate-marquee-vertical flex-col": vertical,
+              "group-hover:[animation-play-state:paused]": pauseOnHover,
+              "[animation-direction:reverse]": reverse,
+            })}
+          >
+            {children}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ShimmerButton — radiant high-contrast call-to-action button.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function ShimmerButton({
+  shimmerColor = "#ffffff",
+  shimmerSize = "0.08em",
+  shimmerDuration = "3s",
+  borderRadius = "8px",
+  background = "rgba(247, 147, 26, 0.95)",
+  className,
+  children,
+  ...props
+}) {
+  return (
+    <button
+      style={{
+        "--spread": "90deg",
+        "--shimmer-color": shimmerColor,
+        "--radius": borderRadius,
+        "--speed": shimmerDuration,
+        "--cut": shimmerSize,
+        "--bg": background,
+      }}
+      className={cn(
+        "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 px-5 py-2.5 text-white [background:var(--bg)] [border-radius:var(--radius)] transition-transform duration-200 active:scale-95",
+        className
+      )}
+      {...props}
+    >
+      {/* spark container */}
+      <div className="pointer-events-none absolute -inset-px -z-30 block [border-radius:var(--radius)]">
+        <div className="absolute inset-0 aspect-square h-full w-full [animation:shimmer-slide_var(--speed)_ease-in-out_infinite_alternate] [background:radial-gradient(circle,var(--shimmer-color)_10%,transparent_60%)]" />
+      </div>
+      {children}
+    </button>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AnimatedGridPattern — subtle glowing grid cells.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function AnimatedGridPattern({
+  width = 40,
+  height = 40,
+  x = -1,
+  y = -1,
+  strokeDasharray = 0,
+  numSquares = 30,
+  className,
+  maxOpacity = 0.5,
+  duration = 4,
+  ...props
+}) {
+  const [squares, setSquares] = useState([]);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    const list = Array.from({ length: numSquares }).map((_, i) => ({
+      id: i,
+      pos: [Math.floor(Math.random() * 20), Math.floor(Math.random() * 12)],
+      delay: Math.random() * 2,
+    }));
+    setSquares(list);
+  }, [numSquares]);
+
+  if (reduced) return null;
+
+  return (
+    <svg
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-0 h-full w-full fill-signal/5 stroke-white/5",
+        className
+      )}
+      {...props}
+    >
+      <defs>
+        <pattern
+          id="animated-grid-pattern"
+          width={width}
+          height={height}
+          patternUnits="userSpaceOnUse"
+          x={x}
+          y={y}
+        >
+          <path
+            d={`M.5 ${height}V.5H${width}`}
+            fill="none"
+            strokeDasharray={strokeDasharray}
+          />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#animated-grid-pattern)" />
+      <svg x={x} y={y} className="overflow-visible">
+        {squares.map(({ pos: [sqX, sqY], id, delay }) => (
+          <motion.rect
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, maxOpacity, 0] }}
+            transition={{
+              duration,
+              repeat: Infinity,
+              delay,
+              ease: "easeInOut",
+            }}
+            key={id}
+            width={width - 1}
+            height={height - 1}
+            x={sqX * width + 1}
+            y={sqY * height + 1}
+            fill="rgba(247, 147, 26, 0.15)"
+            strokeWidth="0"
+          />
+        ))}
+      </svg>
+    </svg>
+  );
+}
+
