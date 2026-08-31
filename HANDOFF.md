@@ -15,9 +15,11 @@ changed.
 
 | | |
 |---|---|
-| Clean production build | ✅ from an empty `.next`, 7 pages + 7 API routes |
+| Clean production build | ✅ from an empty `.next`, 8 pages + 7 API routes |
 | All routes serve 200 | ✅ `/`, `/identify`, `/generate`, `/defender`, `/sandbox`, `/report`, `/method` |
 | Functional regression | ✅ **38/38** |
+| Defense Lab panels | ✅ **14/14** driven in a real browser |
+| Model parity vs Python | ✅ LightGBM **1.39e-17**, phishing **7.8e-8**, librosa **6.65e-8** |
 | Colour rule | ✅ **PASS** — no bad number renders green |
 | Chart scaling | ✅ **9/9** |
 | Label consistency | ✅ **10/10** |
@@ -297,25 +299,54 @@ actions, recorded **zero off-origin requests**.
 
 ---
 
+## The Defense Lab
+
+Added after the redesign, at `/lab`. Six trained model artifacts live in
+`lab/backend/models/`; **five of them run in the browser** from weights exported
+by `lab/scripts/export_lgbm.py`, with feature extractors rebuilt from what each
+artifact specifies about itself.
+
+| Model | Kind | Features | Drivable |
+|---|---|---|---|
+| Phishing text | TF-IDF + logistic regression | 6,499-term vocabulary | ✅ |
+| Transaction fraud | LightGBM, 500 trees | 21 (13 categorical) | ✅ |
+| KYC document fraud | LightGBM, 300 trees | 23 image statistics | ✅ |
+| Account takeover | LightGBM, 300 trees | 19 behavioural deviations | ✅ |
+| Synthetic voice | LightGBM, 300 trees | 74 MFCC / chroma / spectral | ✅ but saturated |
+| Deepfake video | LightGBM, 300 trees | 86, **unnamed** | ❌ not reconstructable |
+
+Two of them do not work as delivered, and the product says so rather than
+hiding it:
+
+- **Voice is saturated.** Extraction is verified against librosa (6.65e-8) and
+  Python returns the same probabilities on the same vectors, but the artifact
+  returns >99% synthetic for every input tested, including audio containing no
+  voice. Across 4,000 vectors it never falls below its own threshold of 0.3154.
+  `tools/checks/voicecheck.mjs` asserts this, so the claim fails the build if it
+  ever stops being true.
+- **Deepfake cannot be driven.** Its config records a feature count and no
+  names; the booster's own names are `Column_0..Column_85`. There is no
+  specification to rebuild an extractor from, so the panel shows the model's
+  anatomy instead of inventing a score.
+
 ## Not yet implemented
 
-Listed here so they are not mistaken for current functionality. None of this
-exists in the repository today.
+Listed here so they are not mistaken for current functionality.
 
-- **A Python/FastAPI service.** Never present in any commit.
-- **XGBoost, scikit-learn, or any ML library.** The defender is the hand-written
-  logistic regression described above.
-- **Render (or any) backend hosting.** No `render.yaml`, `Dockerfile` or
-  `Procfile` has ever existed here.
-- **PostgreSQL, or any persistence at all.** Nothing is stored. Every figure is
-  computed per request from a seeded PRNG; `/method` states this as a design
-  property ("Nothing on this site is a stored constant").
-- **Multi-dataset training.** Training runs against one synthetic corpus
-  generated per request from the 10-account population.
-
-If any of these are genuinely wanted, they are new work, not repairs. Nothing
-currently in the product is waiting on them — the closed loop, the three-round
-retraining and all measured figures already function without them.
+- **A live Python service in the request path.** `lab/` contains a FastAPI
+  backend and `render.yaml` deploys it, but **nothing on the site requires it**:
+  the five drivable models run client-side, and `lib/lab-api.js` skips probing
+  entirely when unconfigured.
+- **PostgreSQL, or any persistence at all.** Nothing is stored. Every simulation
+  figure is computed per request from a seeded PRNG; `/method` states this as a
+  design property ("Nothing on this site is a stored constant").
+- **Multi-dataset training.** The retraining loop runs against one synthetic
+  corpus generated per request from the 10-account population.
+- **Any measurement against real payment traffic.** Every efficacy figure in the
+  product and in `FraudForge-Approach.docx` is measured on synthetic traffic the
+  system generates itself. That is the right way to test coverage of attacks too
+  new to have historical volume, and the wrong way to estimate a production
+  false-positive rate.
 
 ## Deployment
 
@@ -325,8 +356,10 @@ dynamic route handlers; all 7 routes return 200 from `next start`. The app has n
 runtime dependency on any external service: every `fetch` targets a local Next
 route handler, and the engines are pure JS with a seeded PRNG.
 
-**Vercel is the only deployment target, and the app is complete on it.** There is
-no second service to stand up.
+**Vercel is the only deployment target, and the app is complete on it.** The
+`lab/` FastAPI service and `render.yaml` are committed and correct if the
+Python-side attack generator is ever wanted, but no route on the site depends on
+them — the Defense Lab's five drivable models run entirely client-side.
 
 `next.config.mjs` previously carried five rewrites proxying `/api/py/*`,
 `/api/generate/*`, `/api/ai-defense-lab/*`, `/api/incident/*` and
