@@ -15,6 +15,10 @@ import {
   labHealth, labModels, labStatistics, LAB_URL, LAB_CONFIGURED,
 } from "@/lib/lab-api";
 import { scorePhishing, topContributions, VOCAB_SIZE } from "@/lib/phishing";
+import AtoPanel from "@/components/lab/ato-panel";
+import KycPanel from "@/components/lab/kyc-panel";
+import ATO_MODEL from "@/lib/models/ato.json";
+import KYC_MODEL from "@/lib/models/kyc.json";
 
 /* Each model gets an icon that names its modality, so the registry reads as a
    set of surfaces rather than a list of filenames. */
@@ -34,19 +38,19 @@ const REGISTRY = [
   { name: "voice", Icon: Waveform, label: "Synthetic voice",
     modality: "Audio MFCC · LightGBM", features: "74 features",
     drivable: false,
-    note: "Needs audio feature extraction at 24 kHz; no extractor ships with the system." },
+    note: "Feature names are known (20 MFCCs plus spectral statistics), so this is buildable — an MFCC pipeline in the browser is simply a larger job than the others." },
   { name: "deepfake", Icon: VideoCamera, label: "Deepfake video",
     modality: "Video features · LightGBM", features: "86 features",
     drivable: false,
-    note: "Needs the original 86-feature video extractor; no extractor ships with the system." },
+    note: "Its config records a feature count and no feature names, so the extractor is genuinely unknowable — unlike KYC, there is nothing to rebuild from." },
   { name: "kyc", Icon: IdentificationCard, label: "KYC document fraud",
     modality: "Image stats · LightGBM", features: "23 features",
-    drivable: false,
-    note: "Needs image statistics from the original pipeline; no extractor ships with the system." },
+    drivable: true,
+    note: "Its config names all 23 features and every one is an ordinary image statistic, so the extractor was rebuilt in the browser. Drop in a document photo below." },
   { name: "ato", Icon: Fingerprint, label: "Account takeover",
     modality: "Keystroke dynamics · LightGBM", features: "19 features",
-    drivable: false,
-    note: "Needs personalised behavioural deviation features captured from a live session." },
+    drivable: true,
+    note: "Scores deviation from a typing profile you enrol below. Timings and counts only; the characters are never stored." },
 ];
 
 const SAMPLES = [
@@ -93,18 +97,19 @@ export default function Lab() {
         <PageHero>
           <PageHead
             kicker="Blue team · Defense Lab"
-            title="Six trained models, one you can drive"
-            highlight="one you can drive"
+            title="Six trained models, three you can drive"
+            highlight="three you can drive"
             action={
               <button type="button" onClick={connect} disabled={booting} className="btn">
                 {booting ? <><Spinner /> Connecting</> : <><ArrowsClockwise size={14} weight="bold" /> Reconnect</>}
               </button>
             }
           >
-            Six trained model artifacts sit behind this product. The phishing
-            classifier runs here in your browser from its exported weights, so it
-            always works. The other five need feature extractors a browser cannot
-            provide, and this page says so rather than inventing a score.
+            Six trained model artifacts sit behind this product. Three of them run
+            here in your browser — the phishing classifier, the KYC document model
+            and behavioural biometrics — from weights exported straight out of the
+            Python originals. The other three need inputs a browser cannot produce,
+            and this page says which and why rather than inventing a score.
           </PageHead>
         </PageHero>
 
@@ -229,6 +234,42 @@ export default function Lab() {
           </div>
         </section>
 
+        {/* ── Behavioural biometrics ───────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-start gap-3.5">
+            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-signal/15 text-signal ring-1 ring-signal/40">
+              <Fingerprint size={17} weight="bold" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-h2">Account takeover, from how you type</h2>
+              <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
+                The LightGBM model scores 19 deviations from a personal typing
+                profile. Enrol yourself below, then hand the keyboard to someone
+                else and watch the score move.
+              </p>
+            </div>
+          </div>
+          <AtoPanel model={ATO_MODEL} />
+        </section>
+
+        {/* ── KYC document fraud ───────────────────────────────────────── */}
+        <section className="space-y-4">
+          <div className="flex items-start gap-3.5">
+            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-signal/15 text-signal ring-1 ring-signal/40">
+              <IdentificationCard size={17} weight="bold" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-h2">KYC document fraud, from a real image</h2>
+              <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
+                All 23 features are ordinary image statistics — focus, edge
+                density, colour moments, texture, noise — so the extractor was
+                rebuilt exactly. The file never leaves your machine.
+              </p>
+            </div>
+          </div>
+          <KycPanel model={KYC_MODEL} />
+        </section>
+
         {/* ── The registry, and what each model honestly needs ──────────── */}
         <section className="space-y-4">
           <div className="flex items-start gap-3.5">
@@ -290,11 +331,13 @@ export default function Lab() {
         </section>
 
         <Footnote>
-          The phishing classifier runs entirely in the browser: its scikit-learn
-          weights are exported to JSON and the TF-IDF and logistic-regression
-          arithmetic is reimplemented in JavaScript. Parity with scikit-learn is
-          asserted in CI — the largest divergence across the test corpus is 7.8e-8,
-          which is float rounding rather than a difference in behaviour. The Python
+          Three models run entirely in the browser. The phishing classifier is a
+          TF-IDF vectoriser and a logistic regression; the KYC and account-takeover
+          models are LightGBM ensembles whose trees are walked directly. All of
+          them use weights exported from the Python artifacts, and parity is
+          asserted in CI: 7.8e-8 for the phishing model and 2.2e-19 across 80
+          vectors for the two ensembles, which is float noise rather than a
+          difference in behaviour. The Python
           service ({LAB_URL}) adds the attack generator and live artifact
           verification, and nothing on this page requires it.
         </Footnote>
