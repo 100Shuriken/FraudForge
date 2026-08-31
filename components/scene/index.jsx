@@ -29,9 +29,9 @@ export function CockpitScene() {
         // Fades into the panel on the left so it reads as part of the surface
         // rather than a pasted-on widget, and never competes with the headline.
         maskImage:
-          "linear-gradient(to right, transparent 0%, #000 38%, #000 100%)",
+          "linear-gradient(to right, transparent 0%, transparent 12%, #000 52%, #000 100%)",
         WebkitMaskImage:
-          "linear-gradient(to right, transparent 0%, #000 38%, #000 100%)",
+          "linear-gradient(to right, transparent 0%, transparent 12%, #000 52%, #000 100%)",
       }}
     >
       <AccountScene />

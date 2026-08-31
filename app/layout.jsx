@@ -1,4 +1,4 @@
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Sora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -15,10 +15,14 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-const inter = Inter({
+/* Sora rather than Inter for body copy. Inter is the default of every dashboard
+   on the internet and reads as system-neutral; Sora is a geometric sans with
+   noticeably more character in its terminals and apertures, and it holds up at
+   the larger body size below. */
+const sora = Sora({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
-  variable: "--font-inter",
+  variable: "--font-sora",
   display: "swap",
 });
 
@@ -63,7 +67,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${spaceGrotesk.variable} ${sora.variable} ${jetbrainsMono.variable}`}
     >
       <body className="grain font-sans">{children}</body>
     </html>

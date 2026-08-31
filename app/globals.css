@@ -76,39 +76,39 @@
   --color-magnitude: #7f9cc4;     /*  6.9:1 */
 
   /* ---- Type scale ---- */
-  --text-display: 2.75rem;
+  --text-display: 3.25rem;
   --text-display--line-height: 1.05;
   --text-display--letter-spacing: -0.03em;
   --text-display--font-weight: 600;
 
-  --text-h1: 2rem;
+  --text-h1: 2.35rem;
   --text-h1--line-height: 1.12;
   --text-h1--letter-spacing: -0.02em;
   --text-h1--font-weight: 600;
 
-  --text-h2: 1.25rem;
+  --text-h2: 1.45rem;
   --text-h2--line-height: 1.25;
   --text-h2--letter-spacing: -0.01em;
   --text-h2--font-weight: 600;
 
-  --text-h3: 0.9375rem;
+  --text-h3: 1.0625rem;
   --text-h3--line-height: 1.35;
   --text-h3--font-weight: 600;
 
-  --text-body: 0.875rem;
+  --text-body: 0.9375rem;
   --text-body--line-height: 1.6;
 
-  --text-body-sm: 0.8125rem;
+  --text-body-sm: 0.875rem;
   --text-body-sm--line-height: 1.55;
 
-  --text-label: 0.75rem;
+  --text-label: 0.8125rem;
   --text-label--line-height: 1.4;
   --text-label--font-weight: 500;
 
-  --text-caption: 0.75rem;
+  --text-caption: 0.8125rem;
   --text-caption--line-height: 1.45;
 
-  --text-overline: 0.6875rem;
+  --text-overline: 0.75rem;
   --text-overline--line-height: 1.3;
   --text-overline--letter-spacing: 0.08em;
   --text-overline--font-weight: 600;
@@ -124,7 +124,7 @@
      character; body gets the most legible screen sans there is; data gets a
      true technical monospace. */
   --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
   /* ---- shadcn bridge ------------------------------------------------------
@@ -185,8 +185,8 @@
   body {
     background-color: var(--color-base);
     color: var(--color-fg);
-    font-size: 0.875rem;
-    line-height: 1.6;
+    font-size: 0.9375rem;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -249,27 +249,27 @@
      ========================================================================== */
 
   .label {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
     font-weight: 500;
     color: var(--color-fg-muted);
   }
 
   .caption {
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     line-height: 1.45;
     color: var(--color-fg-subtle);
   }
 
   .col-head {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     line-height: 1.3;
     font-weight: 600;
     color: var(--color-fg-subtle);
   }
 
   .overline {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     line-height: 1.3;
     font-weight: 600;
     letter-spacing: 0.08em;

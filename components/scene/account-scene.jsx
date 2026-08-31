@@ -58,6 +58,64 @@ function fibonacciSphere(count, radius) {
 }
 
 /**
+ * Travel.
+ *
+ * Spinning in place was the problem: the graph changed pose but never changed
+ * where it was, so the eye read it as a still object with a texture on it.
+ * This moves the whole graph between waypoints on a loop — it eases out of
+ * one position, crosses, and settles into the next, then holds for a beat
+ * before moving on.
+ *
+ * smoothstep on the leg parameter is what makes it read as deliberate travel
+ * rather than a constant slide: it accelerates away and decelerates in.
+ */
+/* Biased to the right of the frame on purpose. Travel is only worth having if
+   the copy stays readable, and the earlier path swung far enough left that the
+   wireframe crossed the hero paragraph. Lateral movement is now bounded and
+   the range it gives up is taken back on depth (z), which changes apparent
+   size and reads as travel just as clearly. */
+const WAYPOINTS = [
+  new Vector3(0.34, 0.02, 0.0),
+  new Vector3(0.02, 0.24, 0.5),
+  new Vector3(0.52, -0.2, -0.35),
+  new Vector3(0.18, -0.22, 0.3),
+  new Vector3(0.6, 0.26, -0.1),
+];
+
+const LEG_SECONDS = 4.2;   // time crossing between two waypoints
+const DWELL_SECONDS = 1.4; // time held at each
+
+function Travelling({ still, children }) {
+  const group = useRef();
+  const from = useMemo(() => new Vector3(), []);
+  const to = useMemo(() => new Vector3(), []);
+
+  useFrame((state) => {
+    if (!group.current) return;
+
+    if (still) {
+      group.current.position.copy(WAYPOINTS[1]);
+      return;
+    }
+
+    const cycle = LEG_SECONDS + DWELL_SECONDS;
+    const t = state.clock.elapsedTime;
+    const leg = Math.floor(t / cycle);
+    const within = (t % cycle) / LEG_SECONDS; // >1 during the dwell
+
+    from.copy(WAYPOINTS[leg % WAYPOINTS.length]);
+    to.copy(WAYPOINTS[(leg + 1) % WAYPOINTS.length]);
+
+    const raw = Math.min(1, within);
+    const eased = raw * raw * (3 - 2 * raw); // smoothstep
+
+    group.current.position.lerpVectors(from, to, eased);
+  });
+
+  return <group ref={group}>{children}</group>;
+}
+
+/**
  * The account graph.
  *
  * The first version rotated a uniformly-distributed sphere, which is close to
@@ -510,9 +568,13 @@ export default function AccountScene() {
 
       <CameraRig still={reduced} />
 
-      <AccountGraph still={reduced} progress={progress} />
-      <Traffic still={reduced} />
+      <Travelling still={reduced}>
+        <AccountGraph still={reduced} progress={progress} />
+        <Traffic still={reduced} />
+      </Travelling>
 
+      {/* Detector rings sit outside the travelling group deliberately: they
+          watch a fixed region while the account moves through it. */}
       {/* Hardened: tighter orbit, reacts hard to the arrival. */}
       <DetectorRing
         radius={1.72}
