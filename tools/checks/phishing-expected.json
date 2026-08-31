@@ -1,0 +1,50 @@
+[
+ {
+  "text": "Dear customer, your account is suspended. Verify at http://sbi-secure-verify.tk/login within 24 hours to avoid closure.",
+  "p": 0.9630340756165223
+ },
+ {
+  "text": "Hey, sending over the invoice for last month. Let me know if the totals look right before I file it.",
+  "p": 0.15347735438822352
+ },
+ {
+  "text": "URGENT: Your KYC has expired. Enter your UPI PIN now to reactivate or your account will be frozen permanently.",
+  "p": 0.9740234525266638
+ },
+ {
+  "text": "Congratulations!!! You have WON a free iPhone. Click here to claim your prize now!!!",
+  "p": 0.948152958447266
+ },
+ {
+  "text": "Can we move the standup to 10:30 tomorrow? I have a dentist appointment at 9.",
+  "p": 0.7162625807291938
+ },
+ {
+  "text": "Your package could not be delivered. Please confirm your address and pay the customs fee of $2.99 here.",
+  "p": 0.8846623384212857
+ },
+ {
+  "text": "Please find attached the Q3 reconciliation. The variance on line 14 is the one we discussed.",
+  "p": 0.5434156941765698
+ },
+ {
+  "text": "SECURITY ALERT: unusual login detected from a new device. Verify your identity immediately at this link.",
+  "p": 0.91837455612961
+ },
+ {
+  "text": "thanks!",
+  "p": 0.3219523270477254
+ },
+ {
+  "text": "Your netflix subscription payment failed update your card details at netflix-billing-update.xyz to continue watching",
+  "p": 0.8942132688491378
+ },
+ {
+  "text": "Reminder: the team offsite is on Friday. Bring your laptop and the printed agenda.",
+  "p": 0.4859801929918208
+ },
+ {
+  "text": "Dear valued customer your bank account has been temporarily locked due to suspicious activity please verify",
+  "p": 0.9448870523281803
+ }
+]

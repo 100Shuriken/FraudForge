@@ -12,19 +12,42 @@ import {
 import { BlurFade, NumberTicker, BorderBeam } from "@/components/magic";
 import { CardSpotlight } from "@/components/aceternity";
 import {
-  labHealth, labModels, labPhishing, labStatistics, LAB_URL,
+  labHealth, labModels, labStatistics, LAB_URL,
 } from "@/lib/lab-api";
+import { scorePhishing, topContributions, VOCAB_SIZE } from "@/lib/phishing";
 
 /* Each model gets an icon that names its modality, so the registry reads as a
    set of surfaces rather than a list of filenames. */
-const MODEL_META = {
-  transaction: { Icon: CreditCard, label: "Transaction fraud", modality: "Tabular · LightGBM" },
-  phishing: { Icon: Envelope, label: "Phishing text", modality: "TF-IDF + Logistic Regression" },
-  voice: { Icon: Waveform, label: "Synthetic voice", modality: "Audio MFCC · LightGBM" },
-  deepfake: { Icon: VideoCamera, label: "Deepfake video", modality: "Video features · LightGBM" },
-  kyc: { Icon: IdentificationCard, label: "KYC document fraud", modality: "Image stats · LightGBM" },
-  ato: { Icon: Fingerprint, label: "Account takeover", modality: "Keystroke dynamics · LightGBM" },
-};
+/* The registry is a property of the artifacts, not of the service, so it is
+   described here rather than fetched. A live connection confirms load state;
+   it does not supply the list. That keeps the page complete when the service
+   is asleep, which on a free tier it usually is. */
+const REGISTRY = [
+  { name: "phishing", Icon: Envelope, label: "Phishing text",
+    modality: "TF-IDF + Logistic Regression", features: "6,499-term vocabulary",
+    drivable: true,
+    note: "Runs in your browser from the exported weights. Takes raw text, so nothing else is required." },
+  { name: "transaction", Icon: CreditCard, label: "Transaction fraud",
+    modality: "Tabular · LightGBM", features: "21 features",
+    drivable: false,
+    note: "Trained on the IEEE-CIS schema. The red-team generator emits a different shape, so its payloads are not scoreable by this model." },
+  { name: "voice", Icon: Waveform, label: "Synthetic voice",
+    modality: "Audio MFCC · LightGBM", features: "74 features",
+    drivable: false,
+    note: "Needs audio feature extraction at 24 kHz; no extractor ships with the system." },
+  { name: "deepfake", Icon: VideoCamera, label: "Deepfake video",
+    modality: "Video features · LightGBM", features: "86 features",
+    drivable: false,
+    note: "Needs the original 86-feature video extractor; no extractor ships with the system." },
+  { name: "kyc", Icon: IdentificationCard, label: "KYC document fraud",
+    modality: "Image stats · LightGBM", features: "23 features",
+    drivable: false,
+    note: "Needs image statistics from the original pipeline; no extractor ships with the system." },
+  { name: "ato", Icon: Fingerprint, label: "Account takeover",
+    modality: "Keystroke dynamics · LightGBM", features: "19 features",
+    drivable: false,
+    note: "Needs personalised behavioural deviation features captured from a live session." },
+];
 
 const SAMPLES = [
   "Dear customer, your account is suspended. Verify at http://sbi-secure-verify.tk/login within 24 hours to avoid closure.",
@@ -40,7 +63,6 @@ export default function Lab() {
 
   const [text, setText] = useState(SAMPLES[0]);
   const [verdict, setVerdict] = useState(null);
-  const [scoring, setScoring] = useState(false);
 
   const connect = useCallback(async () => {
     setBooting(true);
@@ -53,12 +75,13 @@ export default function Lab() {
 
   useEffect(() => { connect(); }, [connect]);
 
-  const analyse = async () => {
+  // Runs in the browser against the exported scikit-learn weights, so it works
+  // whether or not the Python service is up. Parity with sklearn is asserted
+  // in tools/checks/phishingcheck.mjs (largest divergence 7.8e-8).
+  const analyse = () => {
     if (!text.trim()) return;
-    setScoring(true);
-    const r = await labPhishing(text.trim());
-    setVerdict(r.ok ? r.data : { error: r.error });
-    setScoring(false);
+    const t = text.trim();
+    setVerdict({ ...scorePhishing(t), terms: topContributions(t, 6) });
   };
 
   const online = health?.ok;
@@ -78,47 +101,37 @@ export default function Lab() {
               </button>
             }
           >
-            The defensive half of the system runs as a separate Python service with
-            six trained model artifacts. This page talks to it live. Where a model
-            cannot be driven from a browser, it says so rather than inventing a score.
+            Six trained model artifacts sit behind this product. The phishing
+            classifier runs here in your browser from its exported weights, so it
+            always works. The other five need feature extractors a browser cannot
+            provide, and this page says so rather than inventing a score.
           </PageHead>
         </PageHero>
 
-        {/* ── Service status ───────────────────────────────────────────── */}
-        {booting ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="card p-4">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="mt-3 h-6 w-24" />
-              </div>
-            ))}
-          </div>
-        ) : online ? (
-          <BlurFade>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat emphasis label="Models loaded" value={`${loaded}/${models?.total ?? 6}`}
-                note="LightGBM + scikit-learn artifacts" tone="caught" />
-              <Stat label="Planner mode" value={health.data.planner_mode === "OFFLINE FALLBACK" ? "Offline" : "LLM"}
-                note="deterministic, no credentials required" />
-              <Stat label="Corpus transactions"
-                value={stats ? stats.total_transactions.toLocaleString() : "—"}
-                note={stats ? `${stats.total_customers} customers, ${stats.total_merchants} merchants` : ""} />
-              <Stat label="Browser-drivable" value={models?.browser_drivable?.length ?? 0}
-                note="the rest need feature extractors" tone="review" />
-            </div>
-          </BlurFade>
-        ) : (
-          <EmptyState Icon={Warning} title="The lab service is not reachable"
-            action={
-              <button type="button" onClick={connect} className="btn btn-primary">
-                <ArrowsClockwise size={14} weight="bold" /> Try again
-              </button>
-            }>
-            {health?.error} The rest of FraudForge is self-contained and unaffected —
-            every other page computes in-process. Expecting <span className="font-mono text-signal-text">{LAB_URL}</span>.
-          </EmptyState>
-        )}
+        {/* ── Status. The service is an enhancement, so its absence is a note,
+              not an alarm. ─────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-3">
+          <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] ${
+            online
+              ? "border-caught/40 bg-caught/10 text-caught"
+              : "border-white/12 bg-white/[0.03] text-fg-subtle"}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-caught" : "bg-fg-subtle"}`} />
+            {booting ? "Checking the Python service…"
+              : online ? `Python service connected · ${loaded}/6 artifacts loaded`
+              : "Python service asleep · the classifier below is unaffected"}
+          </span>
+          {!booting && !online ? (
+            <button type="button" onClick={connect} className="btn btn-sm">
+              <ArrowsClockwise size={12} weight="bold" /> Retry
+            </button>
+          ) : null}
+          {online && stats ? (
+            <span className="caption font-mono">
+              {stats.total_transactions.toLocaleString()} transactions ·{" "}
+              {stats.total_customers} customers · {stats.total_merchants} merchants
+            </span>
+          ) : null}
+        </div>
 
         {/* ── The one model a browser can drive ─────────────────────────── */}
         <section className="space-y-4">
@@ -129,8 +142,10 @@ export default function Lab() {
             <div className="min-w-0">
               <h2 className="text-h2">Phishing classifier, live</h2>
               <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
-                Real inference against the trained artifact: TF-IDF over a saved
-                6,499-dimension vocabulary, then logistic regression. Type anything.
+                The trained scikit-learn model, running in your browser: TF-IDF over
+                its saved {VOCAB_SIZE.toLocaleString()}-term vocabulary, then logistic
+                regression. No network call, so it works whether or not the service
+                above is awake.
               </p>
             </div>
           </div>
@@ -147,9 +162,8 @@ export default function Lab() {
                   placeholder="Paste a suspicious message…"
                 />
                 <div className="flex flex-wrap items-center gap-2">
-                  <button type="button" onClick={analyse} disabled={scoring || !online}
-                    className="btn btn-primary">
-                    {scoring ? <><Spinner /> Scoring</> : <><Play size={13} weight="fill" /> Analyse</>}
+                  <button type="button" onClick={analyse} className="btn btn-primary">
+                    <Play size={13} weight="fill" /> Analyse
                   </button>
                   <span className="caption">or try</span>
                   {SAMPLES.map((sample, i) => (
@@ -163,13 +177,7 @@ export default function Lab() {
             </Panel>
 
             <Panel title="Model verdict" className="lg:col-span-5">
-              {!online ? (
-                <p className="text-body-sm text-fg-subtle">Service offline.</p>
-              ) : scoring ? (
-                <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-3 w-32" /></div>
-              ) : verdict?.error ? (
-                <p className="text-body-sm text-evaded">{verdict.error}</p>
-              ) : verdict ? (
+              {verdict ? (
                 <BlurFade key={verdict.fraud_probability}>
                   <div className="relative overflow-hidden rounded-lg border p-5"
                     style={{
@@ -189,8 +197,25 @@ export default function Lab() {
                     <p className="mt-2 text-body-sm text-fg-muted">
                       probability this is <span className="font-medium text-fg">
                         {verdict.prediction === "fraud" ? "phishing" : "legitimate"}
-                      </span> · {verdict.characters} characters
+                      </span> · {verdict.matched_terms} of {verdict.vocabulary.toLocaleString()} vocabulary terms matched
                     </p>
+
+                    {verdict.terms?.length ? (
+                      <div className="mt-4 border-t border-white/10 pt-3">
+                        <p className="overline mb-2">Strongest signals</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {verdict.terms.map((t) => (
+                            <span key={t.term}
+                              className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${
+                                t.weight > 0
+                                  ? "border-evaded/40 bg-evaded/10 text-evaded"
+                                  : "border-caught/40 bg-caught/10 text-caught"}`}>
+                              {t.term} {t.weight > 0 ? "+" : ""}{t.weight.toFixed(2)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </BlurFade>
               ) : (
@@ -218,60 +243,58 @@ export default function Lab() {
             </div>
           </div>
 
-          {models ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {models.models.map((m, i) => {
-                const meta = MODEL_META[m.name] || { Icon: Brain, label: m.name, modality: "" };
-                const { Icon } = meta;
-                return (
-                  <BlurFade key={m.name} delay={i * 0.05}>
-                    <CardSpotlight className="h-full rounded-lg">
-                      <article className={`card corner-node relative z-1 flex h-full flex-col p-5 ${
-                        m.browser_drivable ? "border-signal/40" : ""}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ring-1 ${
-                            m.browser_drivable
-                              ? "bg-signal/15 text-signal ring-signal/40"
-                              : "bg-inset text-fg-subtle ring-white/10"}`}>
-                            <Icon size={17} weight="bold" />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {REGISTRY.map((m, i) => {
+              const { Icon } = m;
+              const live = models?.models?.find((x) => x.name === m.name);
+              return (
+                <BlurFade key={m.name} delay={i * 0.05}>
+                  <CardSpotlight className="h-full rounded-lg">
+                    <article className={`card corner-node relative z-1 flex h-full flex-col p-5 ${
+                      m.drivable ? "border-signal/40" : ""}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ring-1 ${
+                          m.drivable
+                            ? "bg-signal/15 text-signal ring-signal/40"
+                            : "bg-inset text-fg-subtle ring-white/10"}`}>
+                          <Icon size={17} weight="bold" />
+                        </span>
+                        {live?.loaded ? (
+                          <span className="caption rounded-full bg-caught/12 px-2 py-0.5 text-caught">
+                            verified live
                           </span>
-                          <span className={`caption rounded-full px-2 py-0.5 ${
-                            m.loaded ? "bg-caught/12 text-caught" : "bg-evaded/12 text-evaded"}`}>
-                            {m.loaded ? "loaded" : "missing"}
+                        ) : m.drivable ? (
+                          <span className="caption rounded-full bg-signal/12 px-2 py-0.5 text-signal-text">
+                            in browser
                           </span>
-                        </div>
-                        <h3 className="mt-3 text-h3">{meta.label}</h3>
-                        <p className="caption mt-1">{meta.modality}</p>
-                        <p className="mt-3 flex-1 text-body-sm text-fg-muted">
-                          {m.preprocessing || m.feature_note}
-                        </p>
-                        <p className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-                          <span className="caption font-mono">
-                            {m.feature_count ? `${m.feature_count} features` : m.feature_note ? "TF-IDF vocab" : "—"}
-                          </span>
-                          <span className={`caption font-medium ${
-                            m.browser_drivable ? "text-signal-text" : "text-fg-subtle"}`}>
-                            {m.browser_drivable ? "drivable here" : "needs extractor"}
-                          </span>
-                        </p>
-                      </article>
-                    </CardSpotlight>
-                  </BlurFade>
-                );
-              })}
-            </div>
-          ) : !booting ? (
-            <EmptyState Icon={Brain} title="Registry unavailable">
-              The service must be reachable to enumerate its models.
-            </EmptyState>
-          ) : null}
+                        ) : null}
+                      </div>
+                      <h3 className="mt-3 text-h3">{m.label}</h3>
+                      <p className="caption mt-1">{m.modality}</p>
+                      <p className="mt-3 flex-1 text-body-sm text-fg-muted">{m.note}</p>
+                      <p className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+                        <span className="caption font-mono">{m.features}</span>
+                        <span className={`caption font-medium ${
+                          m.drivable ? "text-signal-text" : "text-fg-subtle"}`}>
+                          {m.drivable ? "drivable here" : "needs extractor"}
+                        </span>
+                      </p>
+                    </article>
+                  </CardSpotlight>
+                </BlurFade>
+              );
+            })}
+          </div>
         </section>
 
         <Footnote>
-          The lab runs as a separate Python service ({LAB_URL}) because Vercel has no
-          Python runtime. Every other page in FraudForge computes in-process and is
-          unaffected when this service is asleep. Models are LightGBM and
-          scikit-learn artifacts loaded from disk; no training happens at request time.
+          The phishing classifier runs entirely in the browser: its scikit-learn
+          weights are exported to JSON and the TF-IDF and logistic-regression
+          arithmetic is reimplemented in JavaScript. Parity with scikit-learn is
+          asserted in CI — the largest divergence across the test corpus is 7.8e-8,
+          which is float rounding rather than a difference in behaviour. The Python
+          service ({LAB_URL}) adds the attack generator and live artifact
+          verification, and nothing on this page requires it.
         </Footnote>
       </div>
     </Shell>
