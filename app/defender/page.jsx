@@ -9,6 +9,7 @@ import {
 import { NumberTicker, BorderBeam, BlurFade } from "@/components/magic";
 import { CardSpotlight } from "@/components/aceternity";
 import { rateTone, costTone } from "@/lib/tone";
+import OperatingPoints from "@/components/operating-points";
 
 export default function Defender() {
   const [result, setResult] = useState(null);
@@ -262,6 +263,22 @@ export default function Defender() {
             </EmptyState>
           )
         )}
+
+        {/* Operating characteristics. Precomputed, so it does not wait on a
+            run, and it is the part an operator reads first. */}
+        <section className="space-y-4 border-t border-white/10 pt-8">
+          <div className="min-w-0">
+            <h2 className="text-h2">Friction, measured properly</h2>
+            <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
+              The benchmark above measures its false-positive rate on 300
+              legitimate payments and reports precision at a corpus that is half
+              fraud. Neither survives contact with a payment rail. These are the
+              same detectors measured on 200,000 legitimate payments, with the
+              base-rate arithmetic done.
+            </p>
+          </div>
+          <OperatingPoints />
+        </section>
       </div>
     </Shell>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -13,6 +13,8 @@ import {
   Notebook,
   Brain,
   Info,
+  List,
+  X,
 } from "@phosphor-icons/react";
 import {
   Tooltip,
@@ -57,6 +59,7 @@ const FLAT = NAV.flatMap((g) => g.items);
 export function Shell({ children }) {
   const path = usePathname();
   const current = FLAT.find((n) => n.href === path);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -65,7 +68,7 @@ export function Shell({ children }) {
       </a>
 
       <div className="min-h-[100dvh] lg:flex">
-        {/* ── Rail ───────────────────────────────────────────────────── */}
+        {/* ── Desktop Rail ───────────────────────────────────────────── */}
         <aside className="chrome sticky top-0 z-40 hidden h-[100dvh] w-60 shrink-0 flex-col border-r border-edge lg:flex">
           <Link
             href="/"
@@ -115,17 +118,99 @@ export function Shell({ children }) {
           </div>
         </aside>
 
+        {/* ── Mobile Slide-out Drawer ───────────────────────────────── */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-50 bg-base/80 backdrop-blur-md lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <div
+              className="chrome absolute top-0 right-0 h-full w-[82%] max-w-[320px] border-l border-edge p-5 overflow-y-auto shadow-2xl safe-bottom safe-top"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-edge pb-4 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <Mark />
+                  <span className="text-[15px] font-semibold tracking-tight">
+                    Navigation
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="grid h-9 w-9 place-items-center rounded-md border border-edge bg-inset text-fg-muted hover:text-fg"
+                >
+                  <X size={18} weight="bold" />
+                </button>
+              </div>
+
+              <nav aria-label="Mobile Navigation" className="space-y-5">
+                {NAV.map(({ group, items }) => (
+                  <div key={group}>
+                    <p className="overline mb-2 px-1 text-fg-subtle">{group}</p>
+                    <div className="space-y-1">
+                      {items.map(({ href, label, Icon }) => {
+                        const active = path === href;
+                        return (
+                          <Link
+                            key={href}
+                            href={href}
+                            onClick={() => setMobileMenuOpen(false)}
+                            aria-current={active ? "page" : undefined}
+                            className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-medium transition-colors ${
+                              active
+                                ? "bg-signal/15 text-signal font-semibold ring-1 ring-signal/30"
+                                : "text-fg-muted hover:bg-overlay hover:text-fg"
+                            }`}
+                          >
+                            <Icon
+                              size={18}
+                              weight={active ? "fill" : "regular"}
+                              className="shrink-0"
+                            />
+                            {label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+
+              <div className="mt-8 border-t border-edge pt-4">
+                <div className="flex items-center gap-2">
+                  <span className="pulse-dot" />
+                  <span className="caption">Synthetic evaluation traffic</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* ── Mobile header ────────────────────────────────────────── */}
-          <header className="chrome sticky top-0 z-50 border-b border-edge lg:hidden">
-            <div className="flex h-14 items-center gap-2.5 px-4">
-              <Mark />
-              <span className="text-[14px] font-semibold tracking-tight">
-                FraudForge
-              </span>
-              <span className="ml-auto text-[13px] text-fg-muted">
-                {current?.label}
-              </span>
+          {/* ── Mobile Header ────────────────────────────────────────── */}
+          <header className="chrome sticky top-0 z-40 border-b border-edge lg:hidden">
+            <div className="flex h-14 items-center justify-between px-4">
+              <Link href="/" className="flex items-center gap-2">
+                <Mark />
+                <span className="text-[14px] font-semibold tracking-tight">
+                  FraudForge
+                </span>
+              </Link>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-signal/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-signal ring-1 ring-signal/30">
+                  {current?.label || "Cockpit"}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Toggle navigation menu"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="grid h-9 w-9 place-items-center rounded-md border border-edge/80 bg-raised text-fg active:bg-overlay"
+                >
+                  <List size={18} weight="bold" />
+                </button>
+              </div>
             </div>
           </header>
 
@@ -147,13 +232,13 @@ export function Shell({ children }) {
 
           <main
             id="main"
-            className="relative z-1 mx-auto w-full max-w-[1320px] px-4 py-7 pb-24 lg:px-8 lg:py-9 lg:pb-14"
+            className="relative z-1 mx-auto w-full max-w-[1320px] px-3.5 py-6 pb-28 lg:px-8 lg:py-9 lg:pb-14"
           >
             {children}
           </main>
 
           <footer className="mt-auto border-t border-edge">
-            <div className="mx-auto max-w-[1320px] px-4 py-6 pb-24 lg:px-8 lg:pb-6">
+            <div className="mx-auto max-w-[1320px] px-4 py-6 pb-28 lg:px-8 lg:pb-6">
               <p className="caption prose-measure">
                 Every figure is computed on request. No real customer, payment or
                 account is represented anywhere in this system.
@@ -161,33 +246,38 @@ export function Shell({ children }) {
             </div>
           </footer>
 
-          {/* ── Mobile tab bar ───────────────────────────────────────────
-              Replaces the horizontal scroll strip, which clipped the fourth
-              item mid-word at 390px with no scroll affordance. Seven
-              destinations, all reachable, all 44px tall. */}
+          {/* ── Mobile Touch Tab Bar (Android & iOS Ergonomics) ──────── */}
           <nav
             aria-label="Primary"
-            className="chrome fixed inset-x-0 bottom-0 z-50 border-t border-edge lg:hidden"
+            className="chrome fixed inset-x-0 bottom-0 z-40 border-t border-edge bg-base/95 backdrop-blur-lg safe-bottom lg:hidden"
           >
-            <ul className="grid grid-cols-8">
-              {FLAT.map(({ href, label, Icon }) => {
+            <div className="flex items-center justify-around px-1 py-1 overflow-x-auto [scrollbar-width:none]">
+              {[
+                { href: "/", label: "Cockpit", Icon: Crosshair },
+                { href: "/identify", label: "Identify", Icon: MagnifyingGlass },
+                { href: "/generate", label: "Generate", Icon: Lightning },
+                { href: "/defender", label: "Defend", Icon: ShieldCheck },
+                { href: "/lab", label: "Lab", Icon: Brain },
+                { href: "/sandbox", label: "Sandbox", Icon: SlidersHorizontal },
+              ].map(({ href, label, Icon }) => {
                 const active = path === href;
                 return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      aria-current={active ? "page" : undefined}
-                      className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium ${
-                        active ? "text-signal" : "text-fg-subtle"
-                      }`}
-                    >
-                      <Icon size={18} weight={active ? "fill" : "regular"} />
-                      <span className="leading-none">{label}</span>
-                    </Link>
-                  </li>
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex min-h-[50px] min-w-[54px] flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 text-[10px] font-medium transition-transform active:scale-95 ${
+                      active
+                        ? "text-signal font-semibold"
+                        : "text-fg-subtle hover:text-fg"
+                    }`}
+                  >
+                    <Icon size={19} weight={active ? "fill" : "regular"} />
+                    <span className="leading-none tracking-tight">{label}</span>
+                  </Link>
                 );
               })}
-            </ul>
+            </div>
           </nav>
         </div>
       </div>

@@ -13,7 +13,7 @@ export function CockpitScene() {
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // Autoplay fallback: muted autoplay is supported in all modern browsers
+          // Autoplay fallback: muted autoplay is supported in all modern mobile browsers
         });
       }
     }
@@ -22,7 +22,7 @@ export function CockpitScene() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[50%] max-w-[560px] items-center justify-center overflow-hidden lg:flex"
+      className="pointer-events-none absolute inset-y-0 right-0 flex h-full w-full max-w-[320px] items-center justify-center overflow-hidden opacity-30 sm:max-w-[440px] sm:opacity-55 lg:w-[50%] lg:max-w-[560px] lg:opacity-100"
       style={{
         maskImage:
           "linear-gradient(to right, transparent 0%, transparent 4%, #000 24%, #000 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 8%, #000 92%, transparent 100%)",

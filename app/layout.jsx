@@ -37,6 +37,18 @@ const SITE = "https://fraudforge-site.vercel.app";
 
 export const metadata = {
   metadataBase: new URL(SITE),
+  applicationName: "FraudForge",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "FraudForge",
+  },
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+  },
   title: "FraudForge | Adversarial fraud defense, measured not asserted",
   description:
     "A red team that writes new payment fraud and a blue team that learns from what it missed. Every figure on this page is computed, not claimed.",
@@ -59,8 +71,13 @@ export const metadata = {
 };
 
 export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
   themeColor: "#030304",
   colorScheme: "dark",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }) {
@@ -69,7 +86,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${spaceGrotesk.variable} ${sora.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="grain font-sans">{children}</body>
+      <body className="grain font-sans antialiased text-fg bg-base">{children}</body>
     </html>
   );
 }

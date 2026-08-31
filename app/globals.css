@@ -937,3 +937,82 @@
     margin: 15mm;
   }
 }
+
+/* ==========================================================================
+   Android & Mobile Touch Ergonomics Layer
+   ========================================================================== */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+body {
+  overscroll-behavior-y: none;
+  min-height: 100dvh;
+}
+
+/* Touch targets and instant response (eliminates 300ms mobile tap delay) */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe areas for Android edge-to-edge navigation & gesture bars */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0px));
+}
+
+.safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+/* Momentum touch scrolling for mobile data tables & sequence lanes */
+.touch-scroll,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+/* Custom sleek touch scrollbar for Android */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(247, 147, 26, 0.35);
+}
+
+@media (max-width: 640px) {
+  .hero-field {
+    padding-left: 1.15rem;
+    padding-right: 1.15rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
