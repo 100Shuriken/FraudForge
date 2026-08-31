@@ -1,0 +1,24 @@
+# Render deploys the Python service only. Vercel continues to build the
+# Next.js site from the same repository; the two are independent.
+services:
+  - type: web
+    name: fraudforge-lab
+    runtime: python
+    plan: free
+    rootDir: lab
+    # Pinned because the model artifacts were serialised under an older
+    # scikit-learn, and the pin in requirements.txt only holds if the
+    # interpreter matches the wheels it was resolved against.
+    pythonVersion: "3.11"
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Comma-separated origins allowed to call the API, on top of the
+      # localhost defaults and *.vercel.app. Set this to the production
+      # domain once it is known.
+      - key: FF_ALLOWED_ORIGINS
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"

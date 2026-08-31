@@ -1,0 +1,15 @@
+# Virtualenvs — rebuilt by Render from requirements.txt
+.venv/
+.venv-win/
+venv/
+__pycache__/
+*.pyc
+
+# The bundled Vite dashboard's install; the site is the client now
+frontend/node_modules/
+frontend/dist/
+
+# Local scratch
+.DS_Store
+exports/
+*.zip

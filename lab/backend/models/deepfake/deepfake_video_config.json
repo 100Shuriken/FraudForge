@@ -1,0 +1,12 @@
+{
+    "model_type": "LightGBM",
+    "task": "Real vs Deepfake Video Classification",
+    "num_features": 86,
+    "default_threshold": 0.5,
+    "optimized_threshold": 0.1972240173598317,
+    "optimized_f1": 0.8990825687575082,
+    "accuracy": 0.8922,
+    "precision": 0.8497,
+    "recall": 0.9545,
+    "roc_auc": 0.9533
+}

@@ -1,0 +1,35 @@
+{
+    "model_type": "LightGBM",
+    "task": "KYC Document Fraud Detection",
+    "num_features": 23,
+    "feature_names": [
+        "Width",
+        "Height",
+        "Aspect Ratio",
+        "Brightness Mean",
+        "Brightness Std",
+        "Brightness Median",
+        "Brightness Min",
+        "Brightness Max",
+        "B_Mean",
+        "B_Std",
+        "G_Mean",
+        "G_Std",
+        "R_Mean",
+        "R_Std",
+        "Laplacian Var",
+        "Tenengrad",
+        "Edge Density",
+        "Texture Var Mean",
+        "Texture Var Std",
+        "Hist Skewness",
+        "Hist Kurtosis",
+        "Noise Diff H",
+        "Noise Diff V"
+    ],
+    "optimized_threshold": 0.2800023153334619,
+    "label_mapping": {
+        "0": "Genuine",
+        "1": "Forged"
+    }
+}

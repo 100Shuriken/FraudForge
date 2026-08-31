@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   FileText,
   Notebook,
+  Brain,
   Info,
 } from "@phosphor-icons/react";
 import {
@@ -36,6 +37,10 @@ const NAV = [
       { href: "/generate", label: "Generate", Icon: Lightning },
       { href: "/defender", label: "Defend", Icon: ShieldCheck },
     ],
+  },
+  {
+    group: "Blue team",
+    items: [{ href: "/lab", label: "Defense Lab", Icon: Brain }],
   },
   {
     group: "Evidence",
@@ -164,7 +169,7 @@ export function Shell({ children }) {
             aria-label="Primary"
             className="chrome fixed inset-x-0 bottom-0 z-50 border-t border-edge lg:hidden"
           >
-            <ul className="grid grid-cols-7">
+            <ul className="grid grid-cols-8">
               {FLAT.map(({ href, label, Icon }) => {
                 const active = path === href;
                 return (
