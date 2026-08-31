@@ -351,6 +351,24 @@ only acts *on regress*, and nothing in this scene calls `regress()` — there ar
 no camera controls — so it was inert. `PerformanceMonitor` does the real work,
 switching `dpr` on sustained FPS.
 
+**Bloom, and why degradation is latched.** The scene runs a real
+`EffectComposer` bloom pass (~30KB gzipped on top of the 3D chunk). Emitter
+colours are pushed past 1.0 so they clear the luminance threshold; the
+wireframe and point cloud stay below it, so structure reads as structure and
+only light sources bloom.
+
+Bloom is dropped **permanently** the first time `PerformanceMonitor` reports a
+decline, and that one-way latch is load-bearing. Tying the composer to `dpr`
+directly created a feedback loop — dpr drops, bloom switches off, the frame
+rate recovers, the monitor reads headroom and raises dpr, bloom returns, the
+frame rate craters. Measured on software GL the canvas oscillated 780px ↔ 520px
+indefinitely at 14/61/14/57 fps. Once a device says it cannot afford the
+composer, we believe it and stop asking.
+
+The first tuning pass was also wrong in the other direction: at intensity 1.25
+with a 3.2× emitter the pulse became a blown-out sun that washed over the hero
+headline. Effects must not cost readability, so it is now 0.5 / 1.55×.
+
 **Colour:** the scene is chrome, so it uses chrome colours only — azure for the
 blue team, ember for the red team, muted slate for the account. The
 caught/review/evaded trio never appears in it, per the scope rule in §2.

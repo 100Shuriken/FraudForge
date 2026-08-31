@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useReducedMotion } from "motion/react";
 // Named imports rather than `import * as THREE` so the bundler can drop the
 // rest of the library.
@@ -30,6 +31,13 @@ const SIGNAL = "#f7931a";  /* Bitcoin orange — the hardened detector */
 const FLAME  = "#ea580c";  /* burnt orange   — the red team's attack */
 const GOLD   = "#ffd600";  /* digital gold   — value under threat   */
 const SLATE  = "#7f9cc4";  /* the account graph itself              */
+
+/* Bloom keys off luminance, so anything meant to glow has to clear the
+   threshold. These multipliers push the emitters into HDR; the wireframe and
+   point cloud stay below it deliberately, so structure reads as structure and
+   only the light sources bloom. */
+const EMIT_PULSE = 1.55;
+const EMIT_RING = 1.25;
 
 /* Budget. Kept deliberately small — this is ambient, not a hero render. */
 const NODES = 190;
@@ -168,7 +176,11 @@ function AttackPulse({ progress, still }) {
           it costs one extra draw call instead of a full-screen bloom pass. */}
       <mesh ref={head}>
         <sphereGeometry args={[0.075, 12, 12]} />
-        <meshBasicMaterial color={GOLD} toneMapped={false} />
+        <meshBasicMaterial
+          color={GOLD}
+          toneMapped={false}
+          ref={(m) => m && m.color.multiplyScalar(EMIT_PULSE)}
+        />
         <mesh scale={2.6}>
           <sphereGeometry args={[0.075, 10, 10]} />
           <meshBasicMaterial
@@ -218,7 +230,7 @@ function AttackPulse({ progress, still }) {
  * The asymmetry is the argument, so it is built into the motion rather than
  * decorating it.
  */
-function DetectorRing({ radius, tilt, color, opacity, reactivity, progress, still, speed }) {
+function DetectorRing({ radius, tilt, color, opacity, reactivity, progress, still, speed, emissive = false }) {
   const ring = useRef();
   const mat = useRef();
 
@@ -242,7 +254,10 @@ function DetectorRing({ radius, tilt, color, opacity, reactivity, progress, stil
           tessellation, and it keeps the whole scene under ~5k triangles. */}
       <torusGeometry args={[radius, 0.007, 6, 96]} />
       <meshBasicMaterial
-        ref={mat}
+        ref={(m) => {
+          mat.current = m;
+          if (m && emissive) m.color.multiplyScalar(EMIT_RING);
+        }}
         color={color}
         transparent
         opacity={opacity}
@@ -306,6 +321,16 @@ export default function AccountScene() {
   // Ceiling on pixel ratio, lowered automatically if the device struggles.
   const [dpr, setDpr] = useState(1.5);
 
+  // Degradation is a ONE-WAY latch, and it has to be.
+  //
+  // Tying bloom to `dpr` directly produced a feedback loop: dpr drops, bloom
+  // switches off, the frame rate recovers, PerformanceMonitor reads that as
+  // headroom and raises dpr, bloom returns, the frame rate craters again.
+  // Measured on software GL the canvas oscillated 780px <-> 520px
+  // indefinitely at 14/61/14/57 fps. Once a device has told us it cannot
+  // afford the composer, we believe it and stop asking.
+  const [degraded, setDegraded] = useState(false);
+
   return (
     <Canvas
       // Ambient decoration: never take pointer events from the hero controls.
@@ -328,8 +353,13 @@ export default function AccountScene() {
           regress", and nothing in this scene calls regress() — there are no
           camera controls — so it was inert.) */}
       <PerformanceMonitor
-        onDecline={() => setDpr(1)}
-        onIncline={() => setDpr(1.5)}
+        onDecline={() => {
+          setDpr(1);
+          setDegraded(true);
+        }}
+        // Resolution may climb back; the composer may not. Re-enabling it is
+        // what created the oscillation.
+        onIncline={() => setDpr((d) => (degraded ? d : 1.5))}
       />
 
       <CameraRig still={reduced} />
@@ -342,6 +372,7 @@ export default function AccountScene() {
         tilt={[1.32, 0.22, 0]}
         color={SIGNAL}
         opacity={0.32}
+        emissive
         reactivity={1}
         speed={0.18}
         progress={progress}
@@ -360,6 +391,27 @@ export default function AccountScene() {
       />
 
       <AttackPulse progress={progress} still={reduced} />
+
+      {/* Real bloom rather than faked halos. mipmapBlur gives a wide, soft
+          falloff at a fraction of the cost of a large gaussian kernel, and the
+          luminance threshold is set just under the emitter multipliers so the
+          wireframe and point cloud never bloom — only the light sources do.
+
+          Dropped permanently once the device reports it cannot keep up: the
+          composer is the first thing worth losing, and the scene still reads
+          without it. Latched rather than reactive — see the note on `degraded`
+          above for the oscillation this avoids. */}
+      {!degraded ? (
+        <EffectComposer enableNormalPass={false}>
+          <Bloom
+            intensity={0.5}
+            luminanceThreshold={1.0}
+            luminanceSmoothing={0.22}
+            mipmapBlur
+            radius={0.5}
+          />
+        </EffectComposer>
+      ) : null}
     </Canvas>
   );
 }
