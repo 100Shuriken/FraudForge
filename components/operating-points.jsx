@@ -161,13 +161,18 @@ export default function OperatingPoints() {
           <table className="w-full text-body-sm">
             <thead>
               <tr className="border-b border-white/10 text-left">
-                {["Threshold", "Recall", "False positives", "95% interval", "Precision", "Alerts / M"].map(
-                  (h) => (
-                    <th key={h} className="caption py-1.5 pr-4 font-medium">
-                      {h}
-                    </th>
-                  )
-                )}
+                {[
+                  ["Threshold", ""],
+                  ["Recall", ""],
+                  ["False positives", ""],
+                  ["95% interval", "hidden sm:table-cell"],
+                  ["Precision", ""],
+                  ["Alerts / M", ""],
+                ].map(([h, cls]) => (
+                  <th key={h} className={`caption py-1.5 pr-3 sm:pr-4 font-medium ${cls}`}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -181,25 +186,25 @@ export default function OperatingPoints() {
                       here ? "bg-signal/[0.07]" : ""
                     }`}
                   >
-                    <td className="py-1.5 pr-4 font-mono tabular-nums">
+                    <td className="py-1.5 pr-3 sm:pr-4 font-mono tabular-nums">
                       {s.t.toFixed(2)}
                       {here ? (
                         <span className="ml-2 caption text-signal-text">shipped</span>
                       ) : null}
                     </td>
-                    <td className={`py-1.5 pr-4 font-mono tabular-nums ${toneClass(rateTone(s.recall))}`}>
+                    <td className={`py-1.5 pr-3 sm:pr-4 font-mono tabular-nums ${toneClass(rateTone(s.recall))}`}>
                       {pct(s.recall)}
                     </td>
-                    <td className="py-1.5 pr-4 font-mono tabular-nums text-fg-muted">
+                    <td className="py-1.5 pr-3 sm:pr-4 font-mono tabular-nums text-fg-muted">
                       {pct(s.fpr, 3)}
                     </td>
-                    <td className="py-1.5 pr-4 font-mono text-[11px] tabular-nums text-fg-subtle">
+                    <td className="hidden py-1.5 pr-3 sm:pr-4 font-mono text-[11px] tabular-nums text-fg-subtle sm:table-cell">
                       {pct(s.fprLo, 3)} – {pct(s.fprHi, 3)}
                     </td>
-                    <td className={`py-1.5 pr-4 font-mono tabular-nums ${toneClass(rateTone(b.precision))}`}>
+                    <td className={`py-1.5 pr-3 sm:pr-4 font-mono tabular-nums ${toneClass(rateTone(b.precision))}`}>
                       {pct(b.precision, 1)}
                     </td>
-                    <td className="py-1.5 pr-4 font-mono tabular-nums text-fg-muted">
+                    <td className="py-1.5 pr-3 sm:pr-4 font-mono tabular-nums text-fg-muted">
                       {num(b.alertsPerMillion)}
                     </td>
                   </tr>

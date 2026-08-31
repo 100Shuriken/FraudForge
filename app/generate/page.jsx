@@ -160,7 +160,11 @@ function GenerateInner() {
                 zones now carry the colour meaning, so the legend goes. */}
             {(() => {
               const COLS =
-                "grid grid-cols-[13rem_minmax(0,1fr)_3.6rem_5rem] items-center gap-3";
+                "grid grid-cols-[7rem_minmax(0,1fr)_3rem] gap-2 " +
+                "sm:grid-cols-[13rem_minmax(0,1fr)_3.6rem_5rem] sm:gap-3 items-center";
+              /* The fourth column only exists once the viewport can afford it;
+                 below that the row would overflow rather than wrap. */
+              const COL4 = "hidden sm:block";
               const ZONES = [
                 ["evaded", "Mostly evading", "under a third of payments caught", "bg-evaded", "text-evaded"],
                 ["review", "Partially caught", "between a third and two thirds caught", "bg-review", "text-review"],
@@ -187,7 +191,7 @@ function GenerateInner() {
                       <span className="caption absolute right-0">100%</span>
                     </span>
                     <span />
-                    <span />
+                    <span className={COL4} />
                   </div>
 
                   <div className="relative">
@@ -202,7 +206,7 @@ function GenerateInner() {
                         />
                       </span>
                       <span />
-                      <span />
+                      <span className={COL4} />
                     </div>
 
                     <div className="space-y-4">
@@ -220,7 +224,7 @@ function GenerateInner() {
                               <span className="caption text-right font-mono tabular-nums">
                                 {rows.length}
                               </span>
-                              <span />
+                              <span className={COL4} />
                             </div>
 
                             {rows.map((r, i) => {
@@ -235,7 +239,7 @@ function GenerateInner() {
                                     }`}
                                   >
                                     <span
-                                      className={`truncate pl-2 text-body-sm ${
+                                      className={`truncate pl-2 text-[12px] sm:text-body-sm ${
                                         isFocus ? "font-medium text-fg" : "text-fg-muted"
                                       }`}
                                     >
@@ -250,7 +254,7 @@ function GenerateInner() {
                                     <span className="text-right font-mono text-[13px] font-semibold tabular-nums">
                                       {pct(r.detectionRate, 1)}
                                     </span>
-                                    <span className="caption pr-2 text-right font-mono tabular-nums">
+                                    <span className={`caption pr-2 text-right font-mono tabular-nums ${COL4}`}>
                                       {r.evaded}/{r.records} out
                                     </span>
                                   </button>

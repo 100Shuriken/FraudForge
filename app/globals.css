@@ -582,6 +582,27 @@
     transform: scale(1.15);
   }
 
+  /* Dragging is the only interaction on the site that needs a grabbable
+     handle, and a 16px thumb on a 20px control is fine with a mouse and
+     fiddly with a thumb. Coarse pointers get a bigger handle and a taller
+     hit area; the track stays 4px so nothing looks different. */
+  @media (pointer: coarse) {
+    input[type="range"] {
+      height: 32px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      margin-top: -9px;
+      width: 22px;
+      height: 22px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+    }
+  }
+
   input[type="range"]:focus-visible {
     outline: none;
   }

@@ -192,7 +192,9 @@ export function Shell({ children }) {
           {/* ── Mobile Header ────────────────────────────────────────── */}
           <header className="chrome sticky top-0 z-40 border-b border-edge lg:hidden">
             <div className="flex h-14 items-center justify-between px-4">
-              <Link href="/" className="flex items-center gap-2">
+              {/* -my-2 py-2 keeps the visual height while giving the link a
+                  full-height tap area in the 56px header. */}
+              <Link href="/" className="-my-2 flex items-center gap-2 py-2">
                 <Mark />
                 <span className="text-[14px] font-semibold tracking-tight">
                   FraudForge
@@ -445,7 +447,7 @@ export function Hint({ children }) {
   return (
     <Tooltip>
       <TooltipTrigger
-        className="rounded-full text-fg-subtle transition-colors hover:text-fg-muted"
+        className="-m-2 grid h-8 w-8 place-items-center rounded-full text-fg-subtle transition-colors hover:text-fg-muted"
         aria-label="What this means"
       >
         <Info size={13} weight="bold" />
