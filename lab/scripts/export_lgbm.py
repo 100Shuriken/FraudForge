@@ -58,6 +58,11 @@ MODELS = {
         "backend/models/voice/synthetic_voice_config.json",
         "../lib/models/voice.json",
     ),
+    "deepfake": (
+        "backend/models/deepfake/deepfake_video_lightgbm.pkl",
+        "backend/models/deepfake/deepfake_video_config.json",
+        "../lib/models/deepfake.json",
+    ),
 }
 
 
@@ -114,6 +119,13 @@ def export(name: str) -> None:
         or config.get("features")
         or []
     )
+    # The deepfake config records a count and no names, and the booster agrees:
+    # it was trained on a bare array. There is nothing to recover, so the
+    # positional names are carried through as they are rather than invented.
+    if not features:
+        count = config.get("num_features") or config.get("n_features")
+        if count:
+            features = [f"Column_{i}" for i in range(int(count))]
     threshold = (
         config.get("optimized_threshold")
         or config.get("threshold")

@@ -98,8 +98,8 @@ const REGISTRY = [
     note: "All 74 names are known, so the pipeline was rebuilt in the browser and checked against librosa. Driving it exposed a problem with the artifact itself: it calls almost everything synthetic. Shown below rather than hidden." },
   { name: "deepfake", Icon: VideoCamera, label: "Deepfake video",
     modality: "Video features · LightGBM", features: "86 features",
-    drivable: false,
-    note: "Its config records a feature count and no feature names, and the booster’s own names are Column_0..Column_85. There is nothing to rebuild from, so this page shows the model’s anatomy instead of inventing a score." },
+    drivable: true,
+    note: "Its 86 features have no names anywhere, so there is no extractor to rebuild and no video upload. The ensemble is real and responsive though, so the panel drives its input vector directly rather than leaving it dead." },
   { name: "kyc", Icon: IdentificationCard, label: "KYC document fraud",
     modality: "Image stats · LightGBM", features: "23 features",
     drivable: true,
@@ -154,20 +154,21 @@ export default function Lab() {
         <PageHero>
           <PageHead
             kicker="Blue team · Defense Lab"
-            title="Six trained models, five you can drive"
-            highlight="five you can drive"
+            title="Six trained models, all six you can drive"
+            highlight="all six you can drive"
             action={
               <button type="button" onClick={connect} disabled={booting} className="btn">
                 {booting ? <><Spinner /> Connecting</> : <><ArrowsClockwise size={14} weight="bold" /> Reconnect</>}
               </button>
             }
           >
-            Six trained model artifacts sit behind this product. Five of them run
-            here in your browser, from weights exported straight out of the Python
-            originals and feature extractors rebuilt from what each artifact
-            specifies about itself. The sixth names none of its 86 features, so
-            there is nothing to rebuild from — and this page shows that model’s
-            anatomy rather than inventing a score for it.
+            Six trained model artifacts sit behind this product, and every one of
+            them runs here in your browser from weights exported straight out of
+            the Python originals. Five are driven by feature extractors rebuilt
+            from what each artifact specifies about itself. The sixth names none
+            of its 86 features, so rather than invent an extractor it is driven by
+            its own input vector — the model is real either way, and the page
+            says which is which.
           </PageHead>
         </PageHero>
 
@@ -332,23 +333,15 @@ export default function Lab() {
           {(model) => <KycPanel model={model} />}
         </ModelSection>
 
-        {/* Deepfake video: the one that stays undriveable */}
-        <section className="space-y-4">
-          <div className="flex items-start gap-3.5">
-            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-inset text-fg-subtle ring-1 ring-white/10">
-              <VideoCamera size={17} weight="bold" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-h2">Deepfake video, and why it has no input</h2>
-              <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
-                The sixth model cannot be driven, and the reason is worth
-                showing rather than hiding: its 86 features have no names
-                anywhere in the artifact.
-              </p>
-            </div>
-          </div>
-          <DeepfakePanel />
-        </section>
+        {/* Deepfake video */}
+        <ModelSection
+          Icon={VideoCamera}
+          title="Deepfake video, driven by its own vector"
+          blurb="Its 86 features have no names anywhere in the artifact, so there is no extractor to rebuild and no video to upload. The ensemble itself is real and it responds, so this drives the input vector directly."
+          load={() => import("@/lib/models/deepfake.json")}
+        >
+          {(model) => <DeepfakePanel model={model} />}
+        </ModelSection>
 
         {/* ── The registry, and what each model honestly needs ──────────── */}
         <section className="space-y-4">
@@ -411,10 +404,10 @@ export default function Lab() {
         </section>
 
         <Footnote>
-          Five models run entirely in the browser. The phishing classifier is a
-          TF-IDF vectoriser and a logistic regression; transaction, voice, KYC and
-          account-takeover are LightGBM ensembles whose trees are walked directly,
-          categorical splits included. Every layer is checked against the Python
+          All six models run entirely in the browser. The phishing classifier is a
+          TF-IDF vectoriser and a logistic regression; transaction, voice, KYC,
+          account-takeover and deepfake are LightGBM ensembles whose trees are
+          walked directly, categorical splits included. Every layer is checked against the Python
           original in CI rather than assumed: 7.8e-8 for the phishing model,
           1.4e-17 across 180 vectors for the four ensembles, and 6.7e-8 for the
           74 audio features against librosa. All of that is float noise rather

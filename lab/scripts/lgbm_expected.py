@@ -15,6 +15,8 @@ SPECS = {
             "backend/models/ATO/ato_behavioral_config.json"),
     "voice": ("backend/models/voice/synthetic_voice_lightgbm.pkl",
               "backend/models/voice/synthetic_voice_config.json"),
+    "deepfake": ("backend/models/deepfake/deepfake_video_lightgbm.pkl",
+                 "backend/models/deepfake/deepfake_video_config.json"),
 }
 
 # Scored separately: its 13 categorical columns have to go in as pandas
@@ -30,6 +32,9 @@ for name, (art, cfg) in SPECS.items():
     model = joblib.load(art)
     conf = json.load(open(cfg, encoding="utf-8"))
     feats = conf.get("feature_names") or conf.get("features")
+    if not feats:
+        # No names in the config and none on the booster: positional it is.
+        feats = [f"Column_{i}" for i in range(int(conf["num_features"]))]
 
     # A spread of magnitudes, plus rows with missing values, because
     # default_left handling is the easiest thing to get wrong.
