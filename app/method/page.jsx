@@ -65,7 +65,8 @@ export default function Method() {
   return (
     <Shell>
       <div className="space-y-8">
-        <PageHead kicker="Evidence" title="How it works, and what it does not claim">
+        <PageHead kicker="Evidence" title="How it works, and what it does not claim"
+          highlight="does not claim">
           The honest version. What the loop does step by step, which numbers are measured,
           where the approach is weak, and what deploying it would actually involve.
         </PageHead>
@@ -85,7 +86,7 @@ export default function Method() {
                     className="absolute top-8 bottom-0 left-[13px] w-px bg-edge"
                   />
                 ) : null}
-                <span className="relative z-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-azure/15 font-mono text-[12px] font-semibold text-azure">
+                <span className="relative z-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-signal/15 font-mono text-[12px] font-semibold text-signal">
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1 pt-0.5">

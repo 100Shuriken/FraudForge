@@ -1,6 +1,33 @@
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+
+/**
+ * Three families, three jobs.
+ *
+ * Self-hosted and subset by next/font, so there is no render-blocking request
+ * to Google and no layout shift. `display: swap` plus a matched fallback keeps
+ * first paint honest.
+ */
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
 
 const SITE = "https://fraudforge-site.vercel.app";
 
@@ -28,13 +55,16 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#0b0e16",
+  themeColor: "#030304",
   colorScheme: "dark",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="grain font-sans">{children}</body>
     </html>
   );

@@ -84,7 +84,7 @@ export function Shell({ children }) {
                       aria-current={active ? "page" : undefined}
                       className={`mb-0.5 flex items-center gap-2.5 rounded-sm px-2.5 py-2 text-[13px] font-medium transition-colors ${
                         active
-                          ? "bg-azure/12 text-azure"
+                          ? "bg-signal/12 text-signal"
                           : "text-fg-muted hover:bg-overlay hover:text-fg"
                       }`}
                     >
@@ -172,7 +172,7 @@ export function Shell({ children }) {
                       href={href}
                       aria-current={active ? "page" : undefined}
                       className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium ${
-                        active ? "text-azure" : "text-fg-subtle"
+                        active ? "text-signal" : "text-fg-subtle"
                       }`}
                     >
                       <Icon size={18} weight={active ? "fill" : "regular"} />
@@ -195,20 +195,20 @@ function Mark() {
   return (
     <span
       aria-hidden
-      className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-azure/15 ring-1 ring-azure/40"
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-signal/15 ring-1 ring-signal/40"
     >
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
         <circle
           cx="8"
           cy="8"
           r="5.5"
-          stroke="var(--color-azure)"
+          stroke="var(--color-signal)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeDasharray="26 9"
           transform="rotate(-45 8 8)"
         />
-        <circle cx="8" cy="8" r="1.75" fill="var(--color-ember)" />
+        <circle cx="8" cy="8" r="1.75" fill="var(--color-flame)" />
       </svg>
     </span>
   );
@@ -216,12 +216,28 @@ function Mark() {
 
 /* ---- Page furniture ----------------------------------------------------- */
 
-export function PageHead({ title, kicker, children, action }) {
+/**
+ * PageHead.
+ *
+ * `highlight` takes the trailing words of the title and runs the fire gradient
+ * through them. It is the one piece of decorative type in the system, so it is
+ * reserved for the last few words of a page title and never used mid-sentence.
+ * Passing nothing renders a plain heading, which is correct for the denser
+ * evidence pages.
+ */
+export function PageHead({ title, kicker, children, action, highlight }) {
+  const lead = highlight && title.endsWith(highlight)
+    ? title.slice(0, title.length - highlight.length)
+    : title;
+
   return (
     <div className="flex flex-wrap items-end justify-between gap-5">
       <div className="min-w-0">
         {kicker ? <p className="overline mb-2.5">{kicker}</p> : null}
-        <h1 className="text-h1 lg:text-display">{title}</h1>
+        <h1 className="text-h1 lg:text-display">
+          {lead}
+          {highlight ? <span className="text-fire">{highlight}</span> : null}
+        </h1>
         {children ? (
           <p className="prose-measure mt-3 text-body text-fg-muted">{children}</p>
         ) : null}

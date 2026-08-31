@@ -89,8 +89,8 @@ const after = await card.evaluate((el) => getComputedStyle(el).borderColor);
 const caretColor = await card.locator('svg').evaluate((el) => getComputedStyle(el).color);
 ok('F13: hover changes the card border',
   before !== after, `${before} → ${after}`);
-ok('F13: caret turns azure on hover',
-  caretColor === 'rgb(75, 158, 248)', `caret colour on hover ${caretColor}`);
+ok('F13: caret turns accent on hover',
+  caretColor === 'rgb(247, 147, 26)', `caret colour on hover ${caretColor}`);
 
 /* ── F18 · count repetition ───────────────────────────────────────────── */
 await p.goto(BASE + '/identify', { waitUntil: 'networkidle' });

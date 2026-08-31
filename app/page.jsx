@@ -93,7 +93,7 @@ export default function Cockpit() {
         <ErrorNote>{error}</ErrorNote>
 
         {/* ── MOTION MOMENT 1 · Mission briefing ─────────────────────────
-            Dot grid plus a slow azure-to-ember sweep: the two teams meeting.
+            Dot grid plus a slow azure-to-flame sweep: the two teams meeting.
             Pure CSS, no JS loop. Budget in DESIGN.md §9. */}
         <div className="hero-field relative border border-edge px-5 py-8 lg:px-9 lg:py-11">
           <CockpitScene />
@@ -101,6 +101,7 @@ export default function Cockpit() {
           <PageHead
             kicker="The closed loop"
             title="Attack an account. Watch both detectors score it."
+            highlight="score it."
             action={
               <button
                 type="button"
@@ -281,7 +282,7 @@ export default function Cockpit() {
                           <div key={name} className="flex items-center gap-3">
                             <span
                               className={`w-44 shrink-0 truncate text-body-sm ${
-                                chosen ? "font-medium text-ember" : "text-fg-muted"
+                                chosen ? "font-medium text-flame" : "text-fg-muted"
                               }`}
                               title={labelFor(name)}
                             >
@@ -299,7 +300,7 @@ export default function Cockpit() {
                               <span
                                 aria-hidden
                                 className={`absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full ${
-                                  chosen ? "bg-ember/45" : "bg-magnitude/30"
+                                  chosen ? "bg-flame/45" : "bg-magnitude/30"
                                 }`}
                                 style={{ left: 0, width: `${at(score)}%` }}
                               />
@@ -307,7 +308,7 @@ export default function Cockpit() {
                                 aria-hidden
                                 className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
                                   chosen
-                                    ? "h-3 w-3 bg-ember ring-2 ring-ember/25"
+                                    ? "h-3 w-3 bg-flame ring-2 ring-flame/25"
                                     : "h-2 w-2 bg-magnitude"
                                 }`}
                                 style={{ left: `${at(score)}%` }}
@@ -316,7 +317,7 @@ export default function Cockpit() {
 
                             <span
                               className={`w-11 shrink-0 text-right font-mono text-[12px] tabular-nums ${
-                                chosen ? "font-semibold text-ember" : "text-fg-subtle"
+                                chosen ? "font-semibold text-flame" : "text-fg-subtle"
                               }`}
                             >
                               {score.toFixed(3)}

@@ -26,9 +26,10 @@ import { useReducedMotion } from "motion/react";
 // rest of the library.
 import { QuadraticBezierCurve3, Vector3 } from "three";
 
-const AZURE = "#4b9ef8";
-const EMBER = "#f76b44";
-const SLATE = "#7f9cc4";
+const SIGNAL = "#f7931a";  /* Bitcoin orange — the hardened detector */
+const FLAME  = "#ea580c";  /* burnt orange   — the red team's attack */
+const GOLD   = "#ffd600";  /* digital gold   — value under threat   */
+const SLATE  = "#7f9cc4";  /* the account graph itself              */
 
 /* Budget. Kept deliberately small — this is ambient, not a hero render. */
 const NODES = 190;
@@ -81,7 +82,7 @@ function AccountGraph({ still }) {
       <mesh>
         <icosahedronGeometry args={[1.34, 1]} />
         <meshBasicMaterial
-          color={AZURE}
+          color={SIGNAL}
           wireframe
           transparent
           opacity={0.14}
@@ -164,13 +165,13 @@ function AttackPulse({ progress, still }) {
     <group>
       <mesh ref={head}>
         <sphereGeometry args={[0.075, 12, 12]} />
-        <meshBasicMaterial color={EMBER} toneMapped={false} />
+        <meshBasicMaterial color={FLAME} toneMapped={false} />
       </mesh>
       {Array.from({ length: TRAIL }).map((_, i) => (
         <mesh key={i} ref={(el) => (trail.current[i] = el)}>
           <sphereGeometry args={[0.055, 8, 8]} />
           <meshBasicMaterial
-            color={EMBER}
+            color={FLAME}
             transparent
             opacity={0.5 - i * 0.08}
             toneMapped={false}
@@ -262,7 +263,7 @@ export default function AccountScene() {
       <DetectorRing
         radius={1.72}
         tilt={[1.32, 0.22, 0]}
-        color={AZURE}
+        color={SIGNAL}
         opacity={0.32}
         reactivity={1}
         speed={0.18}

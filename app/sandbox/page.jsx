@@ -128,7 +128,8 @@ export default function Sandbox() {
       <div className="space-y-8">
         <ErrorNote>{error}</ErrorNote>
 
-        <PageHead kicker="Analysis" title="Push on it yourself">
+        <PageHead kicker="Analysis" title="Push on it yourself"
+          highlight="yourself">
           Three things you can drive directly: score a payment you build by hand, move the
           decision threshold and watch the trade move with it, then apply those rates at a
           realistic fraud base rate and see what survives.
@@ -401,7 +402,7 @@ function Stage({ n, title, blurb, accent = false }) {
     <div className="flex items-start gap-3.5">
       <span
         className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[12px] font-semibold ${
-          accent ? "bg-azure/18 text-azure" : "bg-inset text-fg-muted"
+          accent ? "bg-signal/18 text-signal" : "bg-inset text-fg-muted"
         }`}
       >
         {n}

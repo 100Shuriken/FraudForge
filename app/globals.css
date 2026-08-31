@@ -21,35 +21,58 @@
    ========================================================================== */
 
 @theme {
-  /* ---- Surfaces. One cool navy-slate hue family. ---- */
-  --color-base: #0b0e16;
-  --color-raised: #131826;
-  --color-inset: #1a2033;
-  --color-overlay: #222941;
-  --color-edge: #2a3149;          /* 3.0:1 vs base — meets 1.4.11 */
-  --color-edge-strong: #3e4767;
+  /* ======================================================================
+     THE VOID  —  surfaces
+
+     A true-void foundation rather than a flat dark grey. Backgrounds are
+     never flat: the grid pattern, radial energy fields and glass surfaces in
+     the utilities below do the rest of the work.
+     ====================================================================== */
+  --color-base: #030304;          /* True Void */
+  --color-raised: #0f1115;        /* Dark Matter — cards, panels */
+  --color-inset: #15181e;         /* wells, table stripes */
+  --color-overlay: #1c2029;       /* hover */
+  --color-edge: #1e293b;          /* Dim Boundary */
+  --color-edge-strong: #2f3d54;
 
   /* ---- Text ---- */
-  --color-fg: #f5f7fa;            /* 15.9:1 */
-  --color-fg-muted: #a8b2c8;      /*  7.4:1 */
-  --color-fg-subtle: #7c88a3;     /*  4.6:1 — replaces the old 3.44:1 .tag */
+  --color-fg: #ffffff;            /* Pure Light — 20.4:1 on void */
+  --color-fg-muted: #94a3b8;      /* Stardust      — 8.9:1 */
+  --color-fg-subtle: #7c8ba1;     /* metadata      — 6.2:1 */
 
-  /* ---- Teams. Chrome only. ---- */
-  --color-azure: #4b9ef8;         /* blue team · brand · interactive · 6.8:1 */
-  --color-azure-deep: #1e4d8c;
-  --color-ember: #f76b44;         /* red team · attack actions only  · 5.2:1 */
-  --color-ember-deep: #8f3018;
+  /* ======================================================================
+     BITCOIN FIRE  —  chrome only
 
-  /* ---- Data. Never in chrome. ---- */
+     These replace the old azure/ember pair as the product's identity. The
+     scope rule from DESIGN.md §2 is unchanged in shape, only in hue: these
+     are chrome, and they never encode a measurement.
+
+     `flame` carries the red team, because an attack is heat. `signal` is the
+     primary interactive accent. `gold` is value and is reserved for
+     gradients, highlights and emphasis.
+     ====================================================================== */
+  --color-signal: #f7931a;        /* Bitcoin Orange — CTAs, links, active */
+  --color-flame: #ea580c;         /* Burnt Orange   — red team, gradients */
+  --color-gold: #ffd600;          /* Digital Gold   — value, highlights */
+
+  /* Readable variants. #F7931A is only AA for LARGE text on void, so body-size
+     accent text uses --color-signal-text instead. Enforced in §8. */
+  --color-signal-text: #ffb454;   /*  9.8:1 on void — safe at any size */
+
+  /* ======================================================================
+     DATA  —  never in chrome
+
+     Deliberately kept out of the Bitcoin palette. These encode measured
+     outcomes, and `colorcheck.mjs` asserts at runtime that no bad number
+     renders as a good one. Orange means "brand"; it must never also mean
+     "this detector performed well".
+     ====================================================================== */
   --color-caught: #35d6a4;        /*  9.1:1 */
   --color-review: #f2b43c;        /* 11.4:1 */
   --color-evaded: #fb6e68;        /*  6.3:1 */
 
-  /* Magnitude. Deliberately OUTSIDE the semantic trio, for bars that encode
-     "how much" and carry no verdict: signal contributions, feature weights,
-     planner candidate scores. A 0.26 contribution is not good or bad, it is
-     large — so it must not be able to read as caught/review/evaded.
-     See tier 5 of the colour rule in DESIGN.md §2. */
+  /* Magnitude: "how much", with no valence. Outside the semantic trio so it
+     can never be misread as an outcome. */
   --color-magnitude: #7f9cc4;     /*  6.9:1 */
 
   /* ---- Type scale ---- */
@@ -91,13 +114,18 @@
   --text-overline--font-weight: 600;
 
   /* ---- Radius. Was uniformly 0, which with 2px borders read brutalist. ---- */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 8px;               /* inputs, chips */
+  --radius-md: 12px;              /* inner surfaces */
+  --radius-lg: 16px;              /* cards, containers — the "block" */
+  --radius-xl: 24px;              /* major sections */
 
   /* ---- Fonts ---- */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* Three families, three jobs. Headings get a geometric grotesque with
+     character; body gets the most legible screen sans there is; data gets a
+     true technical monospace. */
+  --font-heading: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
   /* ---- shadcn bridge ------------------------------------------------------
      shadcn primitives are written against a fixed set of semantic names. Rather
@@ -112,8 +140,8 @@
   --color-card-foreground: var(--color-fg);
   --color-popover: var(--color-raised);
   --color-popover-foreground: var(--color-fg);
-  --color-primary: var(--color-azure);
-  --color-primary-foreground: #06121f;
+  --color-primary: var(--color-signal);
+  --color-primary-foreground: #1a0d00;
   --color-secondary: var(--color-inset);
   --color-secondary-foreground: var(--color-fg);
   --color-muted: var(--color-inset);
@@ -124,7 +152,7 @@
   --color-destructive-foreground: #1a0703;
   --color-border: var(--color-edge);
   --color-input: var(--color-edge);
-  --color-ring: var(--color-azure);
+  --color-ring: var(--color-signal);
 }
 
 :root {
@@ -142,7 +170,7 @@
 
    Unlayered CSS beats every layered rule regardless of specificity. With these
    rules written outside a layer, `.card` silently overrode
-   `hover:border-azure/45` — and would have overridden any utility touching a
+   `hover:border-signal/45` — and would have overridden any utility touching a
    property a component class already sets. `base` and `components` restore the
    normal contract: component classes are the default, utilities are the escape
    hatch. The print and reduced-motion blocks stay unlayered on purpose, because
@@ -164,7 +192,9 @@
   }
 
   h1, h2, h3, h4 {
+    font-family: var(--font-heading);
     text-wrap: balance;
+    letter-spacing: -0.02em;
   }
 
   p {
@@ -172,12 +202,12 @@
   }
 
   ::selection {
-    background: var(--color-azure);
-    color: var(--color-base);
+    background: var(--color-signal);
+    color: #1a0d00;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-azure);
+    outline: 2px solid var(--color-signal);
     outline-offset: 2px;
     border-radius: 2px;
   }
@@ -197,7 +227,7 @@
     top: -100px;
     z-index: 100;
     border-radius: var(--radius-sm);
-    background: var(--color-azure);
+    background: var(--color-signal);
     color: var(--color-base);
     padding: 0.6rem 1rem;
     font-size: 0.8125rem;
@@ -255,34 +285,144 @@
      Surfaces. Elevation comes from background steps, not offset shadows.
      ========================================================================== */
 
+  /* ==========================================================================
+     THE VISUAL LANGUAGE
+
+     Four ideas do all the work, and every one of them is a utility so no page
+     invents its own version:
+
+       glow    light emanates FROM elements. Shadows are tinted orange/gold,
+               never pure black.
+       glass   translucent panels with backdrop blur, floating in Z-space.
+       grid    the void is never flat — a faint network lattice, masked so it
+               fades toward the edges.
+       aura    large, soft radial energy fields that guide the eye.
+     ========================================================================== */
+
+  /* ---- Glow. The signature. ---- */
+  .glow-sm  { box-shadow: 0 0 20px -5px rgb(234 88 12 / 0.5); }
+  .glow-md  { box-shadow: 0 0 30px -5px rgb(247 147 26 / 0.6); }
+  .glow-gold{ box-shadow: 0 0 20px rgb(255 214 0 / 0.3); }
+  /* Ambient elevation for large surfaces — present but never announced. */
+  .glow-amb { box-shadow: 0 0 50px -10px rgb(247 147 26 / 0.1); }
+
+  /* ---- Glass. Translucent, blurred, floating. ---- */
+  .glass {
+    background: rgb(255 255 255 / 0.05);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgb(255 255 255 / 0.1);
+  }
+
+  .glass-dark {
+    background: rgb(0 0 0 / 0.4);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgb(255 255 255 / 0.1);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass, .glass-dark {
+      background: var(--color-raised);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  /* ---- Grid. The blockchain lattice, vignetted away at the edges. ---- */
+  .bg-grid {
+    background-size: 50px 50px;
+    background-image:
+      linear-gradient(to right, rgb(30 41 59 / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(30 41 59 / 0.5) 1px, transparent 1px);
+    mask-image: radial-gradient(circle at center, #000 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at center, #000 40%, transparent 100%);
+  }
+
+  /* ---- Aura. Soft energy fields. Position absolutely, keep opacity low. ---- */
+  .aura {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .aura-signal { background: var(--color-signal); opacity: 0.10; }
+  .aura-flame  { background: var(--color-flame);  opacity: 0.08; }
+  .aura-gold   { background: var(--color-gold);   opacity: 0.06; }
+
+  /* ---- Gradient text. Reserved for the last words of a display heading. ---- */
+  .text-fire {
+    background-image: linear-gradient(to right, var(--color-signal), var(--color-gold));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  /* ---- Corner accents. The "selected node" effect. ---- */
+  .corner-node { position: relative; }
+  .corner-node::before,
+  .corner-node::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: var(--color-signal);
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease);
+  }
+  .corner-node::before {
+    top: -1px; left: -1px;
+    border-top: 1px solid; border-left: 1px solid;
+    border-top-left-radius: var(--radius-lg);
+  }
+  .corner-node::after {
+    right: -1px; bottom: -1px;
+    border-right: 1px solid; border-bottom: 1px solid;
+    border-bottom-right-radius: var(--radius-lg);
+  }
+  .corner-node:hover::before,
+  .corner-node:hover::after { opacity: 1; }
+
+  /* A card is a block: an elevated surface floating above the void, with a
+     hairline boundary that warms to orange on approach and lifts slightly. */
   .card {
-    border: 1px solid var(--color-edge);
-    border-radius: var(--radius-md);
+    border: 1px solid rgb(255 255 255 / 0.10);
+    border-radius: var(--radius-lg);
     background: var(--color-raised);
+    transition:
+      transform var(--dur-slow) var(--ease),
+      border-color var(--dur-slow) var(--ease),
+      box-shadow var(--dur-slow) var(--ease);
+  }
+
+  /* Only interactive cards lift. A static panel that moves is noise. */
+  .card-interactive:hover {
+    transform: translateY(-4px);
+    border-color: rgb(247 147 26 / 0.5);
+    box-shadow: 0 0 30px -10px rgb(247 147 26 / 0.25);
   }
 
   .card-lg {
-    border: 1px solid var(--color-edge);
-    border-radius: var(--radius-lg);
+    border: 1px solid rgb(255 255 255 / 0.10);
+    border-radius: var(--radius-xl);
     background: var(--color-raised);
   }
 
   .well {
-    border: 1px solid var(--color-edge);
-    border-radius: var(--radius-sm);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: var(--radius-md);
     background: var(--color-inset);
   }
 
   /* The single most important object on a page. Used at most once per view. */
+  /* The single most important object in a view. Lit from within. */
   .card-accent {
-    border-color: color-mix(in oklab, var(--color-azure) 45%, transparent);
+    border-color: rgb(247 147 26 / 0.45);
     background:
-      linear-gradient(
-        180deg,
-        color-mix(in oklab, var(--color-azure) 7%, transparent),
-        transparent 42%
-      ),
+      linear-gradient(180deg, rgb(247 147 26 / 0.08), transparent 45%),
       var(--color-raised);
+    box-shadow: 0 0 40px -12px rgb(247 147 26 / 0.28);
   }
 
   .divide-edge > * + * {
@@ -293,101 +433,105 @@
      Controls
      ========================================================================== */
 
+  /* Buttons are pills that emit light. Uppercase with generous tracking on
+     the primary action only — everywhere else that would be shouting. */
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border: 1px solid var(--color-edge-strong);
-    border-radius: var(--radius-sm);
-    background: var(--color-inset);
+    border: 1px solid rgb(255 255 255 / 0.18);
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.04);
     color: var(--color-fg);
+    font-family: var(--font-sans);
     font-size: 0.8125rem;
     font-weight: 500;
-    padding: 0.55rem 0.9rem;
-    min-height: 36px;
+    padding: 0.6rem 1.1rem;
+    min-height: 44px;             /* touch target */
     cursor: pointer;
     white-space: nowrap;
-    transition:
-      background-color var(--dur-fast) var(--ease),
-      border-color var(--dur-fast) var(--ease),
-      color var(--dur-fast) var(--ease),
-      transform var(--dur-fast) var(--ease);
+    transition: all var(--dur-slow) var(--ease);
   }
 
   .btn:hover:not(:disabled) {
-    background: var(--color-overlay);
-    border-color: var(--color-fg-subtle);
+    border-color: rgb(255 255 255 / 0.45);
+    background: rgb(255 255 255 / 0.1);
   }
 
-  .btn:active:not(:disabled) {
-    transform: translateY(1px);
-  }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-  .btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  /* Azure = the blue team, and every ordinary primary action. */
+  /* Primary: the signature gradient pill. */
   .btn-primary {
-    background: var(--color-azure);
-    border-color: var(--color-azure);
-    color: #06121f;
-    font-weight: 600;
+    background: linear-gradient(to right, var(--color-flame), var(--color-signal));
+    border-color: transparent;
+    color: #1a0d00;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    box-shadow: 0 0 20px -5px rgb(234 88 12 / 0.5);
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--color-azure) 88%, white);
-    border-color: color-mix(in oklab, var(--color-azure) 88%, white);
+    transform: scale(1.04);
+    box-shadow: 0 0 30px -5px rgb(247 147 26 / 0.6);
+    border-color: transparent;
   }
 
-  /* Ember = the red team. Reserved for actions that ARE an attack. */
+  /* Attack: the red team's action. Hotter, deeper in the fire. */
   .btn-attack {
-    background: var(--color-ember);
-    border-color: var(--color-ember);
-    color: #1a0703;
-    font-weight: 600;
+    background: linear-gradient(to right, #dc2626, var(--color-signal));
+    border-color: transparent;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    box-shadow: 0 0 20px -5px rgb(234 88 12 / 0.55);
   }
 
   .btn-attack:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--color-ember) 88%, white);
-    border-color: color-mix(in oklab, var(--color-ember) 88%, white);
+    transform: scale(1.04);
+    box-shadow: 0 0 32px -5px rgb(234 88 12 / 0.7);
   }
 
   .btn-ghost {
     background: transparent;
     border-color: transparent;
     color: var(--color-fg-muted);
+    box-shadow: none;
   }
 
   .btn-ghost:hover:not(:disabled) {
-    background: var(--color-overlay);
-    border-color: var(--color-edge);
-    color: var(--color-fg);
+    background: rgb(255 255 255 / 0.08);
+    color: var(--color-signal-text);
+    border-color: transparent;
   }
 
   .btn-sm {
-    padding: 0.35rem 0.65rem;
-    min-height: 30px;
+    padding: 0.35rem 0.8rem;
+    min-height: 36px;
     font-size: 0.75rem;
   }
 
+  /* Inputs read as terminals: dark, precise, lit from below on focus. */
   .field {
     width: 100%;
-    border: 1px solid var(--color-edge);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-bottom-width: 2px;
     border-radius: var(--radius-sm);
-    background: var(--color-inset);
+    background: rgb(0 0 0 / 0.5);
     color: var(--color-fg);
     font-size: 0.8125rem;
-    padding: 0.5rem 0.7rem;
-    min-height: 36px;
+    padding: 0.6rem 0.8rem;
+    min-height: 44px;
     cursor: pointer;
-    transition: border-color var(--dur-fast) var(--ease);
+    transition: all var(--dur-base) var(--ease);
   }
 
-  .field:hover {
-    border-color: var(--color-edge-strong);
+  .field:hover { border-color: rgb(255 255 255 / 0.28); }
+
+  .field:focus-visible {
+    border-bottom-color: var(--color-signal);
+    box-shadow: 0 10px 20px -10px rgb(247 147 26 / 0.35);
   }
 
   /* Range inputs keep a native element for keyboard support, restyled. */
@@ -419,9 +563,9 @@
     width: 16px;
     height: 16px;
     border-radius: 999px;
-    background: var(--color-azure);
+    background: var(--color-signal);
     border: 2px solid var(--color-base);
-    box-shadow: 0 0 0 1px var(--color-azure);
+    box-shadow: 0 0 0 1px var(--color-signal);
     transition: transform var(--dur-fast) var(--ease);
   }
 
@@ -429,9 +573,9 @@
     width: 16px;
     height: 16px;
     border-radius: 999px;
-    background: var(--color-azure);
+    background: var(--color-signal);
     border: 2px solid var(--color-base);
-    box-shadow: 0 0 0 1px var(--color-azure);
+    box-shadow: 0 0 0 1px var(--color-signal);
   }
 
   input[type="range"]:hover::-webkit-slider-thumb {
@@ -444,8 +588,8 @@
 
   input[type="range"]:focus-visible::-webkit-slider-thumb {
     box-shadow:
-      0 0 0 1px var(--color-azure),
-      0 0 0 4px color-mix(in oklab, var(--color-azure) 40%, transparent);
+      0 0 0 1px var(--color-signal),
+      0 0 0 4px color-mix(in oklab, var(--color-signal) 40%, transparent);
   }
 
   /* ==========================================================================
@@ -487,16 +631,27 @@
   /* ==========================================================================
      MOTION MOMENT 1  —  Cockpit hero only.
 
-     A dot grid and a slow azure-to-ember sweep: the two teams meeting. Pure
+     A dot grid and a slow azure-to-flame sweep: the two teams meeting. Pure
      CSS, no JS loop, no canvas, no resize listener. Budget ceiling from
      DESIGN.md §9.
      ========================================================================== */
 
+  /* ==========================================================================
+     THE HERO FIELD
+
+     Three layers of void, none of them flat:
+       ::before  the network lattice, vignetted away at the edges
+       ::after   a warm energy field bleeding in from the right
+     The 3D scene and the content stack above both.
+     ========================================================================== */
   .hero-field {
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: var(--color-raised);
+    box-shadow: 0 0 50px -10px rgb(247 147 26 / 0.1);
   }
 
   .hero-field::before {
@@ -504,41 +659,34 @@
     position: absolute;
     inset: 0;
     z-index: -2;
-    background-image: radial-gradient(var(--color-edge) 1px, transparent 1px);
-    background-size: 22px 22px;
-    mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 75%);
-    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 75%);
+    background-size: 50px 50px;
+    background-image:
+      linear-gradient(to right, rgb(30 41 59 / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(30 41 59 / 0.5) 1px, transparent 1px);
+    mask-image: radial-gradient(circle at 60% 50%, #000 35%, transparent 85%);
+    -webkit-mask-image: radial-gradient(circle at 60% 50%, #000 35%, transparent 85%);
   }
 
+  /* The energy field. Sits behind the scene, drifts slowly, and is the only
+     thing on this page that moves without being asked to. */
   .hero-field::after {
     content: "";
     position: absolute;
-    inset: -40% -10% auto -10%;
-    height: 340px;
+    inset: -30% -10% auto 30%;
+    height: 420px;
     z-index: -1;
     background:
-      radial-gradient(
-        42% 60% at 22% 50%,
-        color-mix(in oklab, var(--color-azure) 22%, transparent),
-        transparent 70%
-      ),
-      radial-gradient(
-        38% 55% at 78% 45%,
-        color-mix(in oklab, var(--color-ember) 15%, transparent),
-        transparent 70%
-      );
-    filter: blur(38px);
-    animation: sweep 18s ease-in-out infinite alternate;
+      radial-gradient(40% 60% at 35% 50%, rgb(247 147 26 / 0.20), transparent 70%),
+      radial-gradient(36% 55% at 72% 45%, rgb(234 88 12 / 0.14), transparent 70%);
+    filter: blur(110px);
+    animation: drift 20s ease-in-out infinite alternate;
   }
 
-  @keyframes sweep {
-    from {
-      transform: translate3d(-3%, 0, 0) scale(1);
-    }
-    to {
-      transform: translate3d(3%, 0, 0) scale(1.07);
-    }
+  @keyframes drift {
+    from { transform: translate3d(-4%, 0, 0) scale(1); }
+    to   { transform: translate3d(4%, 0, 0) scale(1.08); }
   }
+
 
   /* ==========================================================================
      Data visualisation

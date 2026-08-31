@@ -37,7 +37,7 @@ const adapt = await p.evaluate(() => {
     .map((s) => s.textContent.trim())
     .filter(Boolean);
   const highlighted = [...panel.querySelectorAll('span')]
-    .filter((s) => s.className.includes('text-ember') && !s.className.includes('font-mono'))
+    .filter((s) => s.className.includes('text-flame') && !s.className.includes('font-mono'))
     .map((s) => s.textContent.trim())
     .filter(Boolean);
   return { heading, rows, highlighted };

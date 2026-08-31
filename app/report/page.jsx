@@ -106,7 +106,8 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
         <ErrorNote>{error}</ErrorNote>
 
         <div className="ff-no-print space-y-5">
-          <PageHead kicker="Evidence" title="One incident, start to finish">
+          <PageHead kicker="Evidence" title="One incident, start to finish"
+            highlight="start to finish">
             Who was targeted, why that attack was chosen, what was sent, what each detector
             said, what got through, and what the model learned. Computed in a single pass so
             every section describes the same run.
@@ -170,7 +171,7 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
                   </h2>
                   <p className="mt-1.5 text-body-sm text-fg-muted">
                     {report.target.name} ({report.target.id}) · {report.target.city} ·{" "}
-                    <span className="text-ember">{report.attack.label}</span>
+                    <span className="text-flame">{report.attack.label}</span>
                   </p>
                 </div>
                 <div className="ff-no-print flex items-center gap-2">
@@ -199,7 +200,7 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
 
               <figure className="border-t border-edge bg-inset px-6 py-5">
                 <figcaption className="overline mb-2">The lure</figcaption>
-                <blockquote className="prose-measure border-l-2 border-ember/60 pl-4 text-body text-fg-muted italic">
+                <blockquote className="prose-measure border-l-2 border-flame/60 pl-4 text-body text-fg-muted italic">
                   {report.attack.lure}
                 </blockquote>
               </figure>
@@ -230,7 +231,7 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
               <ol className="divide-y divide-edge">
                 {report.phases.map((ph, i) => (
                   <li key={ph.id} className="flex gap-4 px-5 py-5">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-azure/15 font-mono text-[12px] font-semibold text-azure">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-signal/15 font-mono text-[12px] font-semibold text-signal">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1 space-y-2.5">
@@ -283,7 +284,7 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
                         key={p.id}
                         onClick={() => setSelected(i)}
                         className={`cursor-pointer border-b border-edge/60 align-top transition-colors ${
-                          i === selected ? "bg-azure/8" : "hover:bg-overlay/50"
+                          i === selected ? "bg-signal/8" : "hover:bg-overlay/50"
                         }`}
                       >
                         <td className="caption py-2.5 pr-4 font-mono tabular-nums">{p.step}</td>
@@ -353,7 +354,7 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
                     </tbody>
                   </table>
                 </div>
-                <div className="mt-4 rounded-md border border-ember/35 bg-ember/6 p-4">
+                <div className="mt-4 rounded-md border border-flame/35 bg-flame/6 p-4">
                   <p className="overline mb-1.5">Where the attacker goes next</p>
                   <p className="text-body-sm text-fg-muted">
                     {report.training.evasionAdvice}

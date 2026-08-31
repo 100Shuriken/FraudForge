@@ -58,7 +58,8 @@ export default function Identify() {
         {/* Finding 18: the four counts belong to the tiles directly below, so
             the paragraph no longer repeats them. "28" was stated three times
             inside 400px — here, in the tile, and in "Showing 28 of 28". */}
-        <PageHead kicker="Pillar 1 · Identify" title="The attack surface, mapped">
+        <PageHead kicker="Pillar 1 · Identify" title="The attack surface, mapped"
+          highlight="mapped">
           Every GenAI-enabled payment fraud vector this system can actually
           generate, mapped by category, payment rail and attack surface. Each one
           carries the generator parameters that let the next pillar reproduce it,
@@ -129,7 +130,7 @@ export default function Identify() {
               <button
                 type="button"
                 onClick={() => { setCategory("all"); setRail("all"); }}
-                className="ml-2 text-azure underline underline-offset-2"
+                className="ml-2 text-signal underline underline-offset-2"
               >
                 Clear
               </button>
@@ -161,7 +162,7 @@ export default function Identify() {
               <section key={c.id} className="space-y-4">
                 {/* Category band. Carries the grouping so the 28 cards stop
                     reading as one undifferentiated wall. */}
-                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-l-2 border-azure/60 pl-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-l-2 border-signal/60 pl-4">
                   <h2 className="text-h2">{c.label}</h2>
                   <span className="caption font-mono tabular-nums">
                     {items.length} vector{items.length === 1 ? "" : "s"}
@@ -185,10 +186,10 @@ export default function Identify() {
                       type="button"
                       onClick={() => setOpen(v.id)}
                       aria-haspopup="dialog"
-                      className="card group flex flex-col p-4 text-left transition-colors hover:border-azure/45 hover:bg-overlay/40"
+                      className="card group flex flex-col p-4 text-left transition-colors hover:border-signal/45 hover:bg-overlay/40"
                     >
                       <span className="flex items-start justify-between gap-3">
-                        <span className="text-h3 transition-colors group-hover:text-azure">
+                        <span className="text-h3 transition-colors group-hover:text-signal">
                           {v.name}
                         </span>
                         <span className="caption shrink-0 rounded-sm bg-inset px-1.5 py-0.5">
@@ -215,7 +216,7 @@ export default function Identify() {
                           columns the longer names wrap and an inline caret
                           landed in the middle of them. Cards in a row stretch
                           to equal height, so the carets line up. */}
-                      <span className="mt-auto flex items-center justify-end gap-1 pt-3 text-fg-subtle transition-colors group-hover:text-azure">
+                      <span className="mt-auto flex items-center justify-end gap-1 pt-3 text-fg-subtle transition-colors group-hover:text-signal">
                         <span className="text-[11px] font-medium opacity-0 transition-opacity group-hover:opacity-100">
                           Detection signals
                         </span>

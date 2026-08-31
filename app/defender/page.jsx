@@ -45,6 +45,7 @@ export default function Defender() {
         <PageHead
           kicker="Pillar 3 · Defend"
           title="The misses become the training data"
+          highlight="training data"
           action={
             <button
               type="button"
@@ -137,7 +138,7 @@ export default function Defender() {
                         <span
                           className={`grid h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-[11px] font-semibold ${
                             i === rounds.length - 1
-                              ? "bg-azure/18 text-azure"
+                              ? "bg-signal/18 text-signal"
                               : "bg-overlay text-fg-muted"
                           }`}
                         >
@@ -222,7 +223,7 @@ export default function Defender() {
                 title="Where the attacker goes next"
                 description="Derived from the payments that still evade the final model."
               >
-                <div className="rounded-md border border-ember/35 bg-ember/6 p-4">
+                <div className="rounded-md border border-flame/35 bg-flame/6 p-4">
                   <p className="text-body text-fg-muted">{result.evasionAdvice}</p>
                 </div>
               </Panel>

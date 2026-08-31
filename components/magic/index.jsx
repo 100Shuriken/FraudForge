@@ -117,7 +117,7 @@ export function BorderBeam({
   className,
   size = 120,
   duration = 7,
-  colorFrom = "var(--color-azure)",
+  colorFrom = "var(--color-signal)",
   colorTo = "var(--color-caught)",
   borderWidth = 1,
 }) {

@@ -130,7 +130,7 @@ export function SpatialSequence({ records, selected, onSelect }) {
                       style={{ height: Math.max(3, y(r.riskScore)) }}
                     />
                     {isActive ? (
-                      <span className="absolute inset-x-1.5 -bottom-px h-0.5 rounded-full bg-azure" />
+                      <span className="absolute inset-x-1.5 -bottom-px h-0.5 rounded-full bg-signal" />
                     ) : null}
                   </button>
                 );

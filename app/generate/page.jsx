@@ -89,6 +89,7 @@ function GenerateInner() {
       <PageHead
         kicker="Pillar 2 · Generate"
         title="Synthesise every vector, at scale"
+        highlight="at scale"
         action={
           <div className="flex items-end gap-2.5">
             <div className="w-[210px]">
@@ -228,7 +229,7 @@ function GenerateInner() {
                                     type="button"
                                     onClick={() => runOne(r.attackType)}
                                     className={`${COLS} w-full rounded-sm px-0 py-1.5 text-left transition-colors ${
-                                      isFocus ? "bg-azure/10" : "hover:bg-overlay/60"
+                                      isFocus ? "bg-signal/10" : "hover:bg-overlay/60"
                                     }`}
                                   >
                                     <span

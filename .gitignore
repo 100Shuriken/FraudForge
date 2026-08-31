@@ -15,3 +15,6 @@ CLAUDE.md
 
 # Local MCP dev config, not part of the app.
 .mcp.json
+
+# Local Python service (deployed separately to Render).
+AI-Defense-Lab*/
