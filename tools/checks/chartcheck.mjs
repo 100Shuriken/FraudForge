@@ -64,7 +64,7 @@ const legendRows = await p.evaluate(() => {
   if (!panel) return null;
   const labels = [...new Set([...panel.querySelectorAll('span')]
     .map((s) => s.textContent.trim())
-    .filter((t) => /^(Caught|Step-up|Evaded) —/.test(t))
+    .filter((t) => /^(Caught|Step-up|Evaded)\s*[:\u2014-]/.test(t))
     .map((t) => t.split(' ')[0]))];
   const states = new Set([...panel.querySelectorAll('button[aria-label^="Payment "]')]
     .map((b) => (b.getAttribute('aria-label').match(/, (\w+)$/) || [])[1]));
@@ -117,7 +117,7 @@ const gen = await p.evaluate(() => {
     ? Math.max(...refs.map((r) => parseFloat(getComputedStyle(r).opacity) || 1))
     : 0;
   const legendEls = [...document.querySelectorAll('span')]
-    .filter((s) => /^Caught —/.test(s.textContent.trim()) && !s.querySelector('span'));
+    .filter((s) => /^Caught\s*[:\u2014-]/.test(s.textContent.trim()) && !s.querySelector('span'));
   const legends = legendEls.length;
   return { zones, refCount: refs.length, refVisible, legends };
 });
@@ -128,7 +128,7 @@ ok('F11 generate: reference line rendered and visible',
   gen.refCount > 0 && gen.refVisible >= 0.5,
   `${gen.refCount} ref marks, opacity ${gen.refVisible}`);
 ok('F11 generate: legend appears at most once',
-  gen.legends <= 1, `${gen.legends} "Caught —" legend rows on the page`);
+  gen.legends <= 1, `${gen.legends} "Caught" legend rows on the page`);
 
 await b.close();
 
