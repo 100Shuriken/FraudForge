@@ -7,6 +7,16 @@ import data from "@/lib/operating-points.json";
 
 const pct = (x, dp = 2) => `${(x * 100).toFixed(dp)}%`;
 
+/**
+ * Thousands separators, without Number.prototype.toLocaleString.
+ *
+ * This section is server-rendered, and toLocaleString follows the host locale:
+ * Node here groups Indian-style (2,00,000) while the browser produced 200,000,
+ * so every grouped number was a hydration mismatch (React error #418). A fixed
+ * grouping is identical on both sides by construction.
+ */
+const num = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
 /* Tailwind's scanner only sees literal class names, so a tone has to resolve
    to one of these rather than being interpolated into `text-${tone}`. */
 const TONE = { caught: "text-caught", review: "text-review", evaded: "text-evaded" };
@@ -45,7 +55,7 @@ export default function OperatingPoints() {
     <div className="space-y-4">
       <Panel
         title="What the false-positive rate really is"
-        description={`Measured on ${data.legitimate.toLocaleString()} legitimate payments, not 300.`}
+        description={`Measured on ${num(data.legitimate)} legitimate payments, not 300.`}
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-white/10 bg-inset/50 p-4">
@@ -65,7 +75,7 @@ export default function OperatingPoints() {
 
           <div className="rounded-lg border border-signal/40 bg-signal/[0.07] p-4">
             <p className="overline text-signal-text">
-              Measured on {data.legitimate.toLocaleString()} samples
+              Measured on {num(data.legitimate)} samples
             </p>
             <p className="mt-1 font-mono text-[26px] leading-none font-semibold text-fg tabular-nums">
               {pct(at.fpr)}
@@ -116,8 +126,8 @@ export default function OperatingPoints() {
           {[
             ["Recall", pct(at.recall), rateTone(at.recall)],
             ["Precision", pct(shipped.precision), rateTone(shipped.precision)],
-            ["Alerts / million", shipped.alertsPerMillion.toLocaleString(), null],
-            ["…of which real", shipped.truePerMillion.toLocaleString(), null],
+            ["Alerts / million", num(shipped.alertsPerMillion), null],
+            ["…of which real", num(shipped.truePerMillion), null],
           ].map(([label, value, tone]) => (
             <div
               key={label}
@@ -136,8 +146,8 @@ export default function OperatingPoints() {
         </div>
         <p className="caption border-t border-white/10 pt-3">
           At a {(base * 100).toFixed(base < 0.01 ? 2 : 0)}% base rate the
-          detector raises {shipped.alertsPerMillion.toLocaleString()} alerts per
-          million payments and {shipped.truePerMillion.toLocaleString()} of them
+          detector raises {num(shipped.alertsPerMillion)} alerts per
+          million payments and {num(shipped.truePerMillion)} of them
           are fraud. The 99% precision the half-and-half benchmark reports is
           true of that corpus and misleading about a payment rail.
         </p>
@@ -190,7 +200,7 @@ export default function OperatingPoints() {
                       {pct(b.precision, 1)}
                     </td>
                     <td className="py-1.5 pr-4 font-mono tabular-nums text-fg-muted">
-                      {b.alertsPerMillion.toLocaleString()}
+                      {num(b.alertsPerMillion)}
                     </td>
                   </tr>
                 );
