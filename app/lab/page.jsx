@@ -12,7 +12,7 @@ import {
 import { BlurFade, NumberTicker, BorderBeam } from "@/components/magic";
 import { CardSpotlight } from "@/components/aceternity";
 import {
-  labHealth, labModels, labStatistics, LAB_URL,
+  labHealth, labModels, labStatistics, LAB_URL, LAB_CONFIGURED,
 } from "@/lib/lab-api";
 import { scorePhishing, topContributions, VOCAB_SIZE } from "@/lib/phishing";
 
@@ -118,9 +118,11 @@ export default function Lab() {
             <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-caught" : "bg-fg-subtle"}`} />
             {booting ? "Checking the Python service…"
               : online ? `Python service connected · ${loaded}/6 artifacts loaded`
-              : "Python service asleep · the classifier below is unaffected"}
+              : LAB_CONFIGURED
+                ? "Python service asleep · the classifier below is unaffected"
+                : "Running standalone · the classifier below runs in your browser"}
           </span>
-          {!booting && !online ? (
+          {!booting && !online && LAB_CONFIGURED ? (
             <button type="button" onClick={connect} className="btn btn-sm">
               <ArrowsClockwise size={12} weight="bold" /> Retry
             </button>

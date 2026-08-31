@@ -1,0 +1,9 @@
+# The Python service is deployed separately (see render.yaml); Vercel has no
+# Python runtime and does not need 13MB of model artifacts in the build.
+lab/
+
+# Design review screenshots, regenerated with `npm run capture`.
+design-baseline/
+
+# Local verification harness — never runs in the Vercel build.
+tools/checks/
