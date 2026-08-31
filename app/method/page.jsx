@@ -1,6 +1,7 @@
 "use client";
 
 import { Shell, Panel, PageHead, Footnote } from "@/components/shell";
+import { TracingBeam } from "@/components/aceternity";
 import { TAXONOMY_STATS } from "@/lib/taxonomy";
 
 const LOOP = [
@@ -76,6 +77,10 @@ export default function Method() {
             paddingLeft: i * 1.1rem indent, which drifted the copy further
             right on every row and broke the reading column. */}
         <Panel title="The closed loop" description="The order the engine executes.">
+          {/* The beam fills as the reader scrolls. The loop is an ordered
+              process, so the motion is doing real work: it draws the eye
+              through the steps in the order the engine runs them. */}
+          <TracingBeam className="md:pl-6">
           <ol className="relative space-y-0">
             {LOOP.map(([verb, body], i) => (
               <li key={verb} className="relative flex gap-4 pb-6 last:pb-0">
@@ -96,6 +101,7 @@ export default function Method() {
               </li>
             ))}
           </ol>
+          </TracingBeam>
         </Panel>
 
         {/* ── Claims. Three distinct treatments, because they say three

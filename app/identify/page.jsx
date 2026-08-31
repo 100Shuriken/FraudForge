@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
 import { Shell, Stat, PageHead, EmptyState, Footnote } from "@/components/shell";
 import { CATEGORIES, VECTORS, TAXONOMY_STATS } from "@/lib/taxonomy";
+import { CardSpotlight } from "@/components/aceternity";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -181,12 +182,12 @@ export default function Identify() {
                   style={{ "--cols": bestColumns(items.length) }}
                 >
                   {items.map((v) => (
+                    <CardSpotlight key={v.id} className="rounded-lg">
                     <button
-                      key={v.id}
                       type="button"
                       onClick={() => setOpen(v.id)}
                       aria-haspopup="dialog"
-                      className="card group flex flex-col p-4 text-left transition-colors hover:border-signal/45 hover:bg-overlay/40"
+                      className="card card-interactive corner-node group relative z-1 flex h-full w-full flex-col p-5 text-left"
                     >
                       <span className="flex items-start justify-between gap-3">
                         <span className="text-h3 transition-colors group-hover:text-signal">
@@ -228,6 +229,7 @@ export default function Identify() {
                         />
                       </span>
                     </button>
+                    </CardSpotlight>
                   ))}
                 </div>
               </section>

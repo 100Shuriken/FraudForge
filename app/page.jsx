@@ -11,6 +11,7 @@ import { SpatialSequence, SequenceDetail } from "@/components/sequence";
 import { rateTone, countTone, costTone } from "@/lib/tone";
 import { labelFor } from "@/lib/taxonomy";
 import { CockpitScene } from "@/components/scene";
+import { Spotlight } from "@/components/aceternity";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -95,7 +96,8 @@ export default function Cockpit() {
         {/* ── MOTION MOMENT 1 · Mission briefing ─────────────────────────
             Dot grid plus a slow azure-to-flame sweep: the two teams meeting.
             Pure CSS, no JS loop. Budget in DESIGN.md §9. */}
-        <div className="hero-field relative border border-edge px-5 py-8 lg:px-9 lg:py-11">
+        <div className="hero-field relative px-5 py-8 lg:px-9 lg:py-11">
+          <Spotlight />
           <CockpitScene />
           <div className="relative z-1">
           <PageHead
