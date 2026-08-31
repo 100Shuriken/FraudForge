@@ -308,10 +308,11 @@ premium.
 
 ### The one exception: the Cockpit ambient scene
 
-`components/scene/` renders a WebGL scene behind the Cockpit hero — a node
-sphere (the account's transaction graph), an ember pulse on approach (the red
-team's attack), and two rings that react to its arrival (the hardened and legacy
-detectors). It **does not count against the budget of three**, and the reasoning
+`components/scene/` renders a WebGL scene behind the Cockpit hero — a geodesic
+node sphere (the account's transaction graph, lit at its own vertices), an ember
+pulse on approach with a scattered wake (the red team's attack), two rings that
+react to its arrival (the hardened and legacy detectors), and a fixed starfield
+the graph travels against. It **does not count against the budget of three**, and the reasoning
 matters more than the exemption, so it is written down here rather than left as
 precedent.
 

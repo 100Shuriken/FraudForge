@@ -25,7 +25,13 @@ import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useReducedMotion } from "motion/react";
 // Named imports rather than `import * as THREE` so the bundler can drop the
 // rest of the library.
-import { AdditiveBlending, Color, QuadraticBezierCurve3, Vector3 } from "three";
+import {
+  AdditiveBlending,
+  Color,
+  IcosahedronGeometry,
+  QuadraticBezierCurve3,
+  Vector3,
+} from "three";
 
 const SIGNAL = "#f7931a";  /* Bitcoin orange — the hardened detector */
 const FLAME  = "#ea580c";  /* burnt orange   — the red team's attack */
@@ -42,19 +48,74 @@ const EMIT_RING = 1.25;
 /* Budget. Kept deliberately small — this is ambient, not a hero render. */
 const NODES = 190;
 
-/** Even point distribution on a sphere. Deterministic, so it never flickers. */
-function fibonacciSphere(count, radius) {
-  const pts = new Float32Array(count * 3);
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  for (let i = 0; i < count; i += 1) {
-    const y = 1 - (i / (count - 1)) * 2;
-    const r = Math.sqrt(1 - y * y);
-    const theta = golden * i;
-    pts[i * 3] = Math.cos(theta) * r * radius;
-    pts[i * 3 + 1] = y * radius;
-    pts[i * 3 + 2] = Math.sin(theta) * r * radius;
+/**
+ * The lattice vertices, deduplicated.
+ *
+ * These have to be the icosahedron's own vertices rather than an independently
+ * generated point set: a fibonacci sphere is a different distribution, so its
+ * points land in the middle of faces and the glow reads as speckle laid over
+ * the mesh. Taking them from the geometry puts the light exactly where the
+ * edges meet, which is what makes it look like a lit structure.
+ */
+function latticeVertices(radius, detail) {
+  const geo = new IcosahedronGeometry(radius, detail);
+  const src = geo.getAttribute("position").array;
+  const seen = new Set();
+  const out = [];
+  for (let i = 0; i < src.length; i += 3) {
+    const key = `${src[i].toFixed(4)}|${src[i + 1].toFixed(4)}|${src[i + 2].toFixed(4)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(src[i], src[i + 1], src[i + 2]);
   }
-  return pts;
+  geo.dispose();
+  return new Float32Array(out);
+}
+
+/**
+ * Background starfield.
+ *
+ * The reference has depth behind the graph — scattered points well outside it,
+ * unrelated to the account. They sit in a group that does NOT travel, so the
+ * graph moves against them and the parallax gives the scene a sense of space.
+ */
+const STARS = 260;
+
+function Starfield({ still }) {
+  const ref = useRef();
+  const positions = useMemo(() => {
+    const a = new Float32Array(STARS * 3);
+    for (let i = 0; i < STARS; i += 1) {
+      // A shell well outside the graph so stars never sit inside the lattice.
+      const r = 6 + Math.random() * 9;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      a[i * 3] = r * Math.sin(ph) * Math.cos(th);
+      a[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
+      a[i * 3 + 2] = r * Math.cos(ph) - 6;
+    }
+    return a;
+  }, []);
+
+  useFrame((_, delta) => {
+    if (!still && ref.current) ref.current.rotation.y += delta * 0.012;
+  });
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.055}
+        color="#c9d2e0"
+        transparent
+        opacity={0.55}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
+  );
 }
 
 /**
@@ -136,22 +197,34 @@ function AccountGraph({ still, progress }) {
   const group = useRef();
   const shader = useRef();
   const inner = useRef();
+  const glowMesh = useRef();
+  const edgeShader = useRef();
 
-  const positions = useMemo(() => fibonacciSphere(NODES, 1.35), []);
+  const positions = useMemo(() => latticeVertices(1.34, 2), []);
 
   // One random phase per node, fixed for the lifetime of the scene so the
-  // shimmer is stable rather than reshuffling every frame.
+  // shimmer is stable rather than reshuffling every frame. Only a third of the
+  // vertices are lit at any moment — lighting all of them at once flattens the
+  // mesh into a solid dotted ball.
   const phases = useMemo(() => {
-    const a = new Float32Array(NODES);
-    for (let i = 0; i < NODES; i += 1) a[i] = Math.random();
+    const a = new Float32Array(positions.length / 3);
+    for (let i = 0; i < a.length; i += 1) a[i] = Math.random();
     return a;
-  }, []);
+  }, [positions]);
+
+  const edgeUniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uHot: { value: new Color("#fff0c4") },
+    }),
+    []
+  );
 
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uSize: { value: 21 },
-      uColor: { value: new Color("#9aa8bd") },
+      uSize: { value: 34 },
+      uColor: { value: new Color("#ffd28a") },
       uFlare: { value: 0 },
     }),
     []
@@ -160,6 +233,10 @@ function AccountGraph({ still, progress }) {
   useFrame((state, delta) => {
     if (!group.current) return;
     const t = state.clock.elapsedTime;
+
+    if (edgeShader.current) {
+      edgeShader.current.uniforms.uTime.value = still ? 1.1 : t;
+    }
 
     if (shader.current) {
       shader.current.uniforms.uTime.value = still ? 2.4 : t;
@@ -185,6 +262,7 @@ function AccountGraph({ still, progress }) {
     // The hull counter-rotates a little, so the two layers separate visually
     // instead of moving as one solid object.
     if (inner.current) inner.current.rotation.y -= delta * 0.16;
+    if (glowMesh.current) glowMesh.current.rotation.y -= delta * 0.16;
   });
 
   return (
@@ -209,10 +287,11 @@ function AccountGraph({ still, progress }) {
             uniform float uFlare;
             varying float vT;
             void main() {
-              float tw = 0.5 + 0.5 * sin(uTime * 1.7 + phase * 6.2831853);
+              float raw = 0.5 + 0.5 * sin(uTime * 1.3 + phase * 6.2831853);
+              float tw = pow(raw, 3.0);
               vT = tw + uFlare * 0.30;
               vec4 mv = modelViewMatrix * vec4(position, 1.0);
-              gl_PointSize = uSize * (0.50 + vT * 0.55) / -mv.z;
+              gl_PointSize = uSize * (0.42 + vT * 0.95) / -mv.z;
               gl_Position = projectionMatrix * mv;
             }
           `}
@@ -224,22 +303,67 @@ function AccountGraph({ still, progress }) {
               vec2 c = gl_PointCoord - 0.5;
               float d = dot(c, c);
               if (d > 0.25) discard;
-              float a = smoothstep(0.25, 0.0, d);
-              vec3 col = mix(uColor, vec3(1.0, 0.74, 0.34), clamp(uFlare * 0.45, 0.0, 1.0));
-              gl_FragColor = vec4(col * (0.55 + vT * 0.45), a * (0.26 + vT * 0.40));
+              // Round core plus a faint cross, so the nodes at peak twinkle
+              // read as stars on the lattice rather than as soft blobs.
+              float core = smoothstep(0.25, 0.0, d);
+              float cross = smoothstep(0.06, 0.0, abs(c.x) * abs(c.y)) * 0.45;
+              float a = clamp(core + cross * core, 0.0, 1.0);
+              // Hot nodes go white; quiet ones stay the warm lattice gold.
+              vec3 hot = mix(uColor, vec3(1.0, 0.97, 0.88), clamp(vT - 0.55, 0.0, 1.0) * 1.6);
+              vec3 col = mix(hot, vec3(1.0, 0.82, 0.42), clamp(uFlare * 0.45, 0.0, 1.0));
+              gl_FragColor = vec4(col * (0.65 + vT * 0.85), a * (0.38 + vT * 0.55));
             }
           `}
         />
       </points>
 
-      {/* Sparse hull: reads as the graph's structure without costing polys. */}
+      {/* The lattice. Detail 2 rather than 1, and drawn opaque rather than at
+          0.16 — the faint sparse version read as a smudge behind the pulse
+          instead of as a structure the attack is arriving at. */}
       <mesh ref={inner}>
-        <icosahedronGeometry args={[1.34, 1]} />
+        <icosahedronGeometry args={[1.34, 2]} />
         <meshBasicMaterial
           color={SIGNAL}
           wireframe
           transparent
-          opacity={0.16}
+          opacity={0.7}
+        />
+      </mesh>
+
+      {/* A second copy at a hair larger radius, additively blended and lit by
+          a travelling band. This is what produces the white-hot segments
+          running over the mesh: the band sweeps in local Y and only the edges
+          it crosses brighten. Cheaper and steadier than animating per-edge
+          colours on the buffer. */}
+      <mesh ref={glowMesh} scale={1.004}>
+        <icosahedronGeometry args={[1.34, 2]} />
+        <shaderMaterial
+          ref={edgeShader}
+          wireframe
+          transparent
+          depthWrite={false}
+          blending={AdditiveBlending}
+          uniforms={edgeUniforms}
+          vertexShader={`
+            varying vec3 vPos;
+            void main() {
+              vPos = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `}
+          fragmentShader={`
+            uniform float uTime;
+            uniform vec3 uHot;
+            varying vec3 vPos;
+            void main() {
+              // Two bands at different speeds, so highlights do not pulse in
+              // lockstep and the mesh never looks like it is blinking.
+              float b1 = smoothstep(0.34, 0.0, abs(vPos.y - sin(uTime * 0.55) * 1.35));
+              float b2 = smoothstep(0.26, 0.0, abs(vPos.x - cos(uTime * 0.37) * 1.35));
+              float band = max(b1, b2 * 0.8);
+              gl_FragColor = vec4(uHot * band, band * 0.95);
+            }
+          `}
         />
       </mesh>
     </group>
@@ -315,7 +439,7 @@ function Traffic({ still }) {
  * `progress` is shared upward so the detector rings can react to the arrival
  * instead of animating on an unrelated timer.
  */
-const TRAIL = 5;
+const TRAIL = 26;
 
 function AttackPulse({ progress, still }) {
   const head = useRef();
@@ -338,6 +462,14 @@ function AttackPulse({ progress, still }) {
 
   const point = useMemo(() => new Vector3(), []);
 
+  const haloUniforms = useMemo(
+    () => ({
+      uInner: { value: new Color(GOLD) },
+      uOuter: { value: new Color(FLAME) },
+    }),
+    []
+  );
+
   useFrame((_, delta) => {
     if (!head.current) return;
 
@@ -347,8 +479,14 @@ function AttackPulse({ progress, still }) {
       head.current.position.copy(point);
       trail.current.forEach((m, i) => {
         if (!m) return;
-        curve.getPointAt(Math.max(0, 0.55 - (i + 1) * 0.032), point);
-        m.position.copy(point);
+        curve.getPointAt(Math.max(0, 0.55 - (i + 1) * 0.009), point);
+        const spread = ((i % 5) - 2) * 0.008 * (1 + i * 0.06);
+        m.position.set(
+          point.x + spread,
+          point.y - spread * 0.7,
+          point.z + spread * 0.5
+        );
+        m.scale.setScalar(Math.max(0.15, 1 - i / TRAIL));
       });
       return;
     }
@@ -366,10 +504,17 @@ function AttackPulse({ progress, still }) {
 
     trail.current.forEach((m, i) => {
       if (!m) return;
-      const tt = Math.max(0, t - (i + 1) * 0.032);
+      const tt = Math.max(0, t - (i + 1) * 0.009);
       curve.getPointAt(tt, point);
-      m.position.copy(point);
-      m.scale.setScalar(s * (1 - (i + 1) / (TRAIL + 1)));
+      // Scatter each ember off the exact path so the wake has width, and let
+      // it drift wider the further back it sits.
+      const spread = ((i % 5) - 2) * 0.008 * (1 + i * 0.06);
+      m.position.set(
+        point.x + spread,
+        point.y - spread * 0.7,
+        point.z + spread * 0.5
+      );
+      m.scale.setScalar(s * Math.max(0.15, 1 - i / TRAIL));
     });
   });
 
@@ -379,42 +524,58 @@ function AttackPulse({ progress, still }) {
           overlapping bright geometry read as light rather than as paint, and
           it costs one extra draw call instead of a full-screen bloom pass. */}
       <mesh ref={head}>
-        <sphereGeometry args={[0.075, 12, 12]} />
+        <sphereGeometry args={[0.115, 16, 16]} />
         <meshBasicMaterial
           color={GOLD}
           toneMapped={false}
           ref={(m) => m && m.color.multiplyScalar(EMIT_PULSE)}
         />
-        <mesh scale={2.6}>
-          <sphereGeometry args={[0.075, 10, 10]} />
-          <meshBasicMaterial
-            color={FLAME}
+        {/* One billboarded quad with a radial falloff, not stacked spheres.
+            Solid shells have a hard silhouette, so at this scale they read as
+            concentric flat discs — a bullseye rather than a light source. */}
+        <mesh>
+          <planeGeometry args={[1.55, 1.55]} />
+          <shaderMaterial
             transparent
-            opacity={0.45}
-            blending={AdditiveBlending}
             depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
-        <mesh scale={5.2}>
-          <sphereGeometry args={[0.075, 8, 8]} />
-          <meshBasicMaterial
-            color={FLAME}
-            transparent
-            opacity={0.16}
             blending={AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
+            uniforms={haloUniforms}
+            vertexShader={`
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                // Billboard: strip rotation out of the model-view matrix so
+                // the halo always faces the camera.
+                vec4 mv = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+                mv.xy += position.xy;
+                gl_Position = projectionMatrix * mv;
+              }
+            `}
+            fragmentShader={`
+              uniform vec3 uInner;
+              uniform vec3 uOuter;
+              varying vec2 vUv;
+              void main() {
+                float d = length(vUv - 0.5) * 2.0;
+                if (d > 1.0) discard;
+                float core = pow(1.0 - d, 3.5);
+                float wide = pow(1.0 - d, 1.4) * 0.35;
+                vec3 col = mix(uOuter, uInner, clamp(core * 2.0, 0.0, 1.0));
+                gl_FragColor = vec4(col, clamp(core + wide, 0.0, 1.0) * 0.85);
+              }
+            `}
           />
         </mesh>
       </mesh>
       {Array.from({ length: TRAIL }).map((_, i) => (
         <mesh key={i} ref={(el) => (trail.current[i] = el)}>
-          <sphereGeometry args={[0.055, 8, 8]} />
+          {/* Sizes fall off along the trail and scatter slightly, so the wake
+              reads as a spray of embers rather than a string of beads. */}
+          <sphereGeometry args={[0.007 + (((i * 7) % 5) / 5) * 0.019, 6, 6]} />
           <meshBasicMaterial
             color={FLAME}
             transparent
-            opacity={0.5 - i * 0.08}
+            opacity={Math.max(0.08, 0.8 - i * 0.026)}
             blending={AdditiveBlending}
             depthWrite={false}
             toneMapped={false}
@@ -456,7 +617,7 @@ function DetectorRing({ radius, tilt, color, opacity, reactivity, progress, stil
     <mesh ref={ring} rotation={tilt}>
       {/* Low segment counts: this is a hairline ring, nobody can see the
           tessellation, and it keeps the whole scene under ~5k triangles. */}
-      <torusGeometry args={[radius, 0.007, 6, 96]} />
+      <torusGeometry args={[radius, 0.011, 8, 128]} />
       <meshBasicMaterial
         ref={(m) => {
           mat.current = m;
@@ -510,7 +671,7 @@ function CameraRig({ still }) {
     target.set(
       pointer.x * 0.42,
       pointer.y * 0.3 - scroll.current * 0.55,
-      4.6 + scroll.current * 1.15
+      5.35 + scroll.current * 1.15
     );
     camera.position.lerp(target, k);
     camera.lookAt(0, 0, 0);
@@ -545,7 +706,7 @@ export default function AccountScene() {
       // Reduced motion renders exactly one frame and then stops entirely,
       // rather than animating slower. Zero ongoing cost.
       frameloop={reduced ? "demand" : "always"}
-      camera={{ position: [0, 0, 4.6], fov: 42 }}
+      camera={{ position: [0, 0, 5.35], fov: 42 }}
       gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
       // If WebGL is unavailable the hero simply has no scene behind it.
       fallback={null}
@@ -568,6 +729,8 @@ export default function AccountScene() {
 
       <CameraRig still={reduced} />
 
+      <Starfield still={reduced} />
+
       <Travelling still={reduced}>
         <AccountGraph still={reduced} progress={progress} />
         <Traffic still={reduced} />
@@ -580,7 +743,7 @@ export default function AccountScene() {
         radius={1.72}
         tilt={[1.32, 0.22, 0]}
         color={SIGNAL}
-        opacity={0.32}
+        opacity={0.5}
         emissive
         reactivity={1}
         speed={0.18}
@@ -592,7 +755,7 @@ export default function AccountScene() {
         radius={2.05}
         tilt={[1.5, -0.36, 0.5]}
         color={SLATE}
-        opacity={0.16}
+        opacity={0.3}
         reactivity={0.12}
         speed={-0.1}
         progress={progress}
