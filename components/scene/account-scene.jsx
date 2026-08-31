@@ -20,7 +20,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
+import { PerformanceMonitor } from "@react-three/drei";
 import { useReducedMotion } from "motion/react";
 // Named imports rather than `import * as THREE` so the bundler can drop the
 // rest of the library.
@@ -247,12 +247,14 @@ export default function AccountScene() {
     >
       {/* Degrade resolution before dropping frames. If sustained FPS falls the
           pixel ratio steps down; if there is headroom it steps back up. On a
-          soft-edged scene like this the change is close to invisible. */}
+          soft-edged scene like this the change is close to invisible.
+          (drei's <AdaptiveDpr> was tried here and removed: it only acts "on
+          regress", and nothing in this scene calls regress() — there are no
+          camera controls — so it was inert.) */}
       <PerformanceMonitor
         onDecline={() => setDpr(1)}
         onIncline={() => setDpr(1.5)}
       />
-      <AdaptiveDpr pixelated />
 
       <AccountGraph still={reduced} />
 

@@ -346,6 +346,11 @@ enforced in code:
 automatically by drei's `PerformanceMonitor` when sustained FPS drops, and no
 lights or shadows — every material is `meshBasicMaterial`.
 
+drei's `<AdaptiveDpr>` was tried alongside `PerformanceMonitor` and removed: it
+only acts *on regress*, and nothing in this scene calls `regress()` — there are
+no camera controls — so it was inert. `PerformanceMonitor` does the real work,
+switching `dpr` on sustained FPS.
+
 **Colour:** the scene is chrome, so it uses chrome colours only — azure for the
 blue team, ember for the red team, muted slate for the account. The
 caught/review/evaded trio never appears in it, per the scope rule in §2.
