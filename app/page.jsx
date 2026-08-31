@@ -10,6 +10,7 @@ import {
 import { SpatialSequence, SequenceDetail } from "@/components/sequence";
 import { rateTone, countTone, costTone } from "@/lib/tone";
 import { labelFor } from "@/lib/taxonomy";
+import { CockpitScene } from "@/components/scene";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -94,7 +95,9 @@ export default function Cockpit() {
         {/* ── MOTION MOMENT 1 · Mission briefing ─────────────────────────
             Dot grid plus a slow azure-to-ember sweep: the two teams meeting.
             Pure CSS, no JS loop. Budget in DESIGN.md §9. */}
-        <div className="hero-field border border-edge px-5 py-8 lg:px-9 lg:py-11">
+        <div className="hero-field relative border border-edge px-5 py-8 lg:px-9 lg:py-11">
+          <CockpitScene />
+          <div className="relative z-1">
           <PageHead
             kicker="The closed loop"
             title="Attack an account. Watch both detectors score it."
@@ -119,6 +122,7 @@ export default function Cockpit() {
             by flat threshold rules, and by a scorer that grades against this
             account&apos;s own baseline.
           </PageHead>
+          </div>
         </div>
 
         {/* ── Controls ─────────────────────────────────────────────────── */}

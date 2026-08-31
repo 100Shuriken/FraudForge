@@ -158,6 +158,7 @@ that genuinely carry that valence).
 | `components/shell.jsx` | Rewritten. Grouped rail, mobile tab bar, skip-link, shared vocabulary, `AccentScope`. |
 | `components/sequence.jsx` | Rewritten. Flat two-lane timeline, fitted domain, drawn threshold. |
 | `components/magic/index.jsx` | **New.** `NumberTicker`, `BlurFade`, `BorderBeam` ported to JSX. |
+| `components/scene/*` | **New.** Cockpit ambient WebGL scene (R3F + drei), lazy-loaded, documented as the one exception to the motion budget in DESIGN.md §9. |
 | `components/ui/*.jsx` | **New.** 8 shadcn primitives as JSX (`tsx: false`). |
 | `lib/tone.js` | **New.** Every data colour in the app resolves here. |
 | `lib/taxonomy.js` | Added `labelFor()` — the one place an id becomes display text. |
@@ -175,9 +176,13 @@ and all of `app/api/`.
 ### Dependencies
 
 Added: `radix-ui`, `lucide-react`, `class-variance-authority`, `clsx`,
-`tailwind-merge`, `playwright-core` (dev).
-Removed: `three` — verified imported nowhere.
+`tailwind-merge`, `playwright-core` (dev), and `three` + `@react-three/fiber` +
+`@react-three/drei` for the Cockpit scene.
 Kept: `motion` — was unused, now drives the three motion moments.
+
+`three` was removed earlier in this work as a dead dependency; it is back
+because the Cockpit scene gives it an actual use. It costs ~242KB gzipped, all
+lazy-loaded after the page is interactive.
 
 `lucide-react` is used **only inside shadcn primitives** (chevron, check, close).
 The visible icon language is Phosphor, unchanged.

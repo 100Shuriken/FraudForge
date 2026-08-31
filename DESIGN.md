@@ -299,6 +299,53 @@ Exactly three moments carry motion beyond a state transition.
 | 2 | Generate reveal | 28 ranked rows blur-fade in worst-first at 18ms stagger | transform + opacity, ends by 500ms |
 | 3 | Defend results | border-beam on the final-round card, ticker on recall delta | one CSS conic gradient |
 
-No spotlights, meteors, auroras, vortexes or beams anywhere else. No WebGL, no
-canvas loop, no animation library. `three` and `motion` were installed and imported
-nowhere; both are removed.
+No spotlights, meteors, auroras, vortexes or beams anywhere else. `motion` drives
+those three moments and nothing else.
+
+**Do not add a fourth without removing one.** The cap is the point: the critique
+this system answers found that scattered effects read as unfinished, not as
+premium.
+
+### The one exception: the Cockpit ambient scene
+
+`components/scene/` renders a WebGL scene behind the Cockpit hero — a node
+sphere (the account's transaction graph), an ember pulse on approach (the red
+team's attack), and two rings that react to its arrival (the hardened and legacy
+detectors). It **does not count against the budget of three**, and the reasoning
+matters more than the exemption, so it is written down here rather than left as
+precedent.
+
+**Why it is not a fourth moment.** The three budgeted moments are *discrete UI
+events*: each fires once, in response to something the user did or some data
+arriving, and each draws the eye to a specific number or row at a specific
+instant. That is exactly the currency the budget rations — moments that compete
+for attention with the data. The scene is not an event. It is ambient
+background: it never fires, never resolves, never asks to be looked at, and
+carries no reading. Removing it would change the page's atmosphere and cost
+nothing in comprehension; removing a budgeted moment would remove a signal.
+
+**What keeps the exception from eroding the rule.** Four constraints, all
+enforced in code:
+
+1. **One page only.** The Cockpit hero. If a second page ever wants a scene, the
+   answer is no, or it replaces this one.
+2. **Behind the content, never over it.** `pointer-events: none`, masked into the
+   panel, and the hero's own text and controls stack above it. Verified: the
+   "Run attack" button is clickable with the scene mounted.
+3. **It cannot cost page load.** Dynamically imported with `ssr: false`, so
+   nothing is fetched until after the page is interactive. Measured at ~870KB
+   raw / ~242KB gzipped, all of it after `DOMContentLoaded` (34ms), and the page
+   renders and functions identically before it arrives or if it never does.
+4. **It obeys `prefers-reduced-motion` completely.** Not slower — stopped.
+   `frameloop="demand"` renders exactly one static frame with the pulse parked
+   mid-approach, then does no further work. Verified: frames 2.5s apart are
+   byte-identical.
+
+**Budget for the scene itself:** under ~5k triangles, procedural geometry only
+(no `.glb`/`.gltf`, no asset pipeline), `dpr` capped at 1.5 and stepped down
+automatically by drei's `PerformanceMonitor` when sustained FPS drops, and no
+lights or shadows — every material is `meshBasicMaterial`.
+
+**Colour:** the scene is chrome, so it uses chrome colours only — azure for the
+blue team, ember for the red team, muted slate for the account. The
+caught/review/evaded trio never appears in it, per the scope rule in §2.
