@@ -7,7 +7,8 @@ and the ATO model from 3.3MB, before gzip.
 
 The emitted shape is deliberately terse because it ships to every visitor:
 
-    {"n": <feature count>, "f": [names], "b": <init score>, "t": [tree, ...]}
+    {"n": <feature count>, "f": [names], "b": <init score>, "t": [tree, ...],
+     "cat": {name: [vocabulary]}}     categorical columns, if any
 
     tree   = node
     node   = {"f": featureIdx, "t": threshold, "c": 1 if "==" else 0,
@@ -15,6 +16,13 @@ The emitted shape is deliberately terse because it ships to every visitor:
               "m": 0|1|2 for missing_type None|Zero|NaN,
               "l": node, "r": node}
            | number            (a leaf value)
+
+A categorical split is set membership, not equality: LightGBM dumps its
+threshold as a "||"-joined list of category indices and sends a row LEFT when
+its code is in that set. `t` is that list, sorted, so the evaluator can binary
+search it. The transaction model is the first one here with categorical
+columns, and reading "==" as a single-value comparison would have quietly
+routed every multi-category split wrong.
 
 Run from the lab directory:
     python scripts/export_lgbm.py
@@ -40,6 +48,16 @@ MODELS = {
         "backend/models/ATO/ato_behavioral_config.json",
         "../lib/models/ato.json",
     ),
+    "transaction": (
+        "backend/models/transaction/lgb_transaction_fraud.pkl",
+        "backend/models/transaction/transaction_fraud_config.json",
+        "../lib/models/transaction.json",
+    ),
+    "voice": (
+        "backend/models/voice/synthetic_voice_lightgbm.pkl",
+        "backend/models/voice/synthetic_voice_config.json",
+        "../lib/models/voice.json",
+    ),
 }
 
 
@@ -56,10 +74,19 @@ def compact(node: dict):
     # default_left put one KYC vector on the wrong leaf.
     missing = {"None": 0, "Zero": 1, "NaN": 2}.get(node.get("missing_type"), 0)
 
+    categorical = node.get("decision_type") == "=="
+    if categorical:
+        # "3||7||11" is a set of category codes, and the row goes left when its
+        # code is a member. Sorted so the evaluator can binary search rather
+        # than scan — DeviceInfo alone has 1786 categories.
+        threshold = sorted(int(v) for v in str(node["threshold"]).split("||"))
+    else:
+        threshold = float(node["threshold"])
+
     return {
         "f": node["split_feature"],
-        "t": float(node["threshold"]),
-        "c": 1 if node.get("decision_type") == "==" else 0,
+        "t": threshold,
+        "c": 1 if categorical else 0,
         "d": 1 if node.get("default_left") else 0,
         "m": missing,
         "l": compact(node["left_child"]),
@@ -77,7 +104,16 @@ def export(name: str) -> None:
     with open(config_path, encoding="utf-8") as handle:
         config = json.load(handle)
 
-    features = config.get("feature_names") or config.get("features") or []
+    # The transaction and voice boosters were trained on arrays, so their own
+    # feature_name() is Column_0..Column_n. The real names live in the config
+    # (and, for transaction, in the backend's schema), which is why the config
+    # is the source of truth here rather than the artifact.
+    features = (
+        config.get("feature_names")
+        or config.get("features_used")
+        or config.get("features")
+        or []
+    )
     threshold = (
         config.get("optimized_threshold")
         or config.get("threshold")
@@ -93,14 +129,30 @@ def export(name: str) -> None:
         "t": [compact(t["tree_structure"]) for t in dumped["tree_info"]],
     }
 
+    # Categorical columns are pandas Categoricals, so the model sees a code:
+    # the index of the value in this vocabulary. The browser has to encode the
+    # same way, so the vocabularies ship with the model.
+    categorical = config.get("categorical_features") or []
+    vocabularies = dumped.get("pandas_categorical") or []
+    if categorical and vocabularies:
+        if len(categorical) != len(vocabularies):
+            raise SystemExit(
+                f"{name}: {len(categorical)} categorical columns but "
+                f"{len(vocabularies)} vocabularies — the pairing is positional, "
+                "so a mismatch would encode every one of them wrong."
+            )
+        payload["cat"] = dict(zip(categorical, vocabularies))
+
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, separators=(",", ":"))
 
     size = os.path.getsize(out) // 1024
+    cats = len(payload.get("cat", {}))
     print(
-        f"{name:4s} -> {out}  {len(payload['t'])} trees, "
-        f"{len(features)} features, threshold {threshold:.4f}, {size}KB"
+        f"{name:12s} -> {out}  {len(payload['t'])} trees, "
+        f"{len(features)} features, {cats} categorical, "
+        f"threshold {threshold:.4f}, {size}KB"
     )
 
 

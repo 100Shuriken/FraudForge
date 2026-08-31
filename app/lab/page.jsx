@@ -7,7 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import {
   Shell, Panel, Stat, PageHead, PageHero, Spinner, Footnote,
-  EmptyState, Skeleton, pct,
+  EmptyState, ErrorNote, Skeleton, pct,
 } from "@/components/shell";
 import { BlurFade, NumberTicker, BorderBeam } from "@/components/magic";
 import { CardSpotlight } from "@/components/aceternity";
@@ -17,8 +17,65 @@ import {
 import { scorePhishing, topContributions, VOCAB_SIZE } from "@/lib/phishing";
 import AtoPanel from "@/components/lab/ato-panel";
 import KycPanel from "@/components/lab/kyc-panel";
-import ATO_MODEL from "@/lib/models/ato.json";
-import KYC_MODEL from "@/lib/models/kyc.json";
+import TransactionPanel from "@/components/lab/transaction-panel";
+import VoicePanel from "@/components/lab/voice-panel";
+import DeepfakePanel from "@/components/lab/deepfake-panel";
+
+/**
+ * Load one model artifact on demand.
+ *
+ * Five artifacts run in this page and they come to 3.3MB of JSON between them.
+ * Bundling that statically would make this route's first load worse than the
+ * rest of the site put together, for weights most visitors never score
+ * against, so each is fetched as its own chunk when its section mounts.
+ */
+function useModelArtifact(load) {
+  const [model, setModel] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    load()
+      .then((m) => live && setModel(m.default ?? m))
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+    // The loader is a literal import expression, stable by construction.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { model, failed };
+}
+
+/** A titled section whose panel waits on its model. */
+function ModelSection({ Icon, title, blurb, load, children }) {
+  const { model, failed } = useModelArtifact(load);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-start gap-3.5">
+        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-signal/15 text-signal ring-1 ring-signal/40">
+          <Icon size={17} weight="bold" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-h2">{title}</h2>
+          <p className="prose-measure mt-1 text-body-sm text-fg-subtle">{blurb}</p>
+        </div>
+      </div>
+      {failed ? (
+        <ErrorNote>
+          That model artifact could not be loaded, so nothing is scored here
+          rather than a placeholder being shown.
+        </ErrorNote>
+      ) : model ? (
+        children(model)
+      ) : (
+        <Skeleton className="h-72 w-full" />
+      )}
+    </section>
+  );
+}
 
 /* Each model gets an icon that names its modality, so the registry reads as a
    set of surfaces rather than a list of filenames. */
@@ -33,16 +90,16 @@ const REGISTRY = [
     note: "Runs in your browser from the exported weights. Takes raw text, so nothing else is required." },
   { name: "transaction", Icon: CreditCard, label: "Transaction fraud",
     modality: "Tabular · LightGBM", features: "21 features",
-    drivable: false,
-    note: "Trained on the IEEE-CIS schema. The red-team generator emits a different shape, so its payloads are not scoreable by this model." },
+    drivable: true,
+    note: "The red-team generator emits a different shape, which is why the backend adapter rejects its payloads — but the columns themselves are ordinary, and the artifact ships the vocabulary for all 13 categorical ones. State them and it runs." },
   { name: "voice", Icon: Waveform, label: "Synthetic voice",
     modality: "Audio MFCC · LightGBM", features: "74 features",
-    drivable: false,
-    note: "Feature names are known (20 MFCCs plus spectral statistics), so this is buildable — an MFCC pipeline in the browser is simply a larger job than the others." },
+    drivable: true,
+    note: "All 74 names are known, so the pipeline was rebuilt in the browser and checked against librosa. Driving it exposed a problem with the artifact itself: it calls almost everything synthetic. Shown below rather than hidden." },
   { name: "deepfake", Icon: VideoCamera, label: "Deepfake video",
     modality: "Video features · LightGBM", features: "86 features",
     drivable: false,
-    note: "Its config records a feature count and no feature names, so the extractor is genuinely unknowable — unlike KYC, there is nothing to rebuild from." },
+    note: "Its config records a feature count and no feature names, and the booster’s own names are Column_0..Column_85. There is nothing to rebuild from, so this page shows the model’s anatomy instead of inventing a score." },
   { name: "kyc", Icon: IdentificationCard, label: "KYC document fraud",
     modality: "Image stats · LightGBM", features: "23 features",
     drivable: true,
@@ -97,19 +154,20 @@ export default function Lab() {
         <PageHero>
           <PageHead
             kicker="Blue team · Defense Lab"
-            title="Six trained models, three you can drive"
-            highlight="three you can drive"
+            title="Six trained models, five you can drive"
+            highlight="five you can drive"
             action={
               <button type="button" onClick={connect} disabled={booting} className="btn">
                 {booting ? <><Spinner /> Connecting</> : <><ArrowsClockwise size={14} weight="bold" /> Reconnect</>}
               </button>
             }
           >
-            Six trained model artifacts sit behind this product. Three of them run
-            here in your browser — the phishing classifier, the KYC document model
-            and behavioural biometrics — from weights exported straight out of the
-            Python originals. The other three need inputs a browser cannot produce,
-            and this page says which and why rather than inventing a score.
+            Six trained model artifacts sit behind this product. Five of them run
+            here in your browser, from weights exported straight out of the Python
+            originals and feature extractors rebuilt from what each artifact
+            specifies about itself. The sixth names none of its 86 features, so
+            there is nothing to rebuild from — and this page shows that model’s
+            anatomy rather than inventing a score for it.
           </PageHead>
         </PageHero>
 
@@ -234,40 +292,62 @@ export default function Lab() {
           </div>
         </section>
 
-        {/* ── Behavioural biometrics ───────────────────────────────────── */}
-        <section className="space-y-4">
-          <div className="flex items-start gap-3.5">
-            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-signal/15 text-signal ring-1 ring-signal/40">
-              <Fingerprint size={17} weight="bold" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-h2">Account takeover, from how you type</h2>
-              <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
-                The LightGBM model scores 19 deviations from a personal typing
-                profile. Enrol yourself below, then hand the keyboard to someone
-                else and watch the score move.
-              </p>
-            </div>
-          </div>
-          <AtoPanel model={ATO_MODEL} />
-        </section>
+        {/* Transaction fraud */}
+        <ModelSection
+          Icon={CreditCard}
+          title="Transaction fraud, from the columns it was trained on"
+          blurb="500 trees over 21 IEEE-CIS columns, thirteen of them categorical. Change the amount, the hour or the device and watch the ensemble move."
+          load={() => import("@/lib/models/transaction.json")}
+        >
+          {(model) => <TransactionPanel model={model} />}
+        </ModelSection>
 
-        {/* ── KYC document fraud ───────────────────────────────────────── */}
+        {/* Synthetic voice */}
+        <ModelSection
+          Icon={Waveform}
+          title="Synthetic voice, from real audio"
+          blurb="All 74 features are MFCC, chroma and spectral statistics, so the extraction pipeline was rebuilt in the browser and checked against librosa. Driving it turned up something about the artifact worth reading."
+          load={() => import("@/lib/models/voice.json")}
+        >
+          {(model) => <VoicePanel model={model} />}
+        </ModelSection>
+
+        {/* Behavioural biometrics */}
+        <ModelSection
+          Icon={Fingerprint}
+          title="Account takeover, from how you type"
+          blurb="The LightGBM model scores 19 deviations from a personal typing profile. Enrol yourself below, then hand the keyboard to someone else and watch the score move."
+          load={() => import("@/lib/models/ato.json")}
+        >
+          {(model) => <AtoPanel model={model} />}
+        </ModelSection>
+
+        {/* KYC document fraud */}
+        <ModelSection
+          Icon={IdentificationCard}
+          title="KYC document fraud, from a real image"
+          blurb="All 23 features are ordinary image statistics — focus, edge density, colour moments, texture, noise — so the extractor was rebuilt exactly. The file never leaves your machine."
+          load={() => import("@/lib/models/kyc.json")}
+        >
+          {(model) => <KycPanel model={model} />}
+        </ModelSection>
+
+        {/* Deepfake video: the one that stays undriveable */}
         <section className="space-y-4">
           <div className="flex items-start gap-3.5">
-            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-signal/15 text-signal ring-1 ring-signal/40">
-              <IdentificationCard size={17} weight="bold" />
+            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-inset text-fg-subtle ring-1 ring-white/10">
+              <VideoCamera size={17} weight="bold" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-h2">KYC document fraud, from a real image</h2>
+              <h2 className="text-h2">Deepfake video, and why it has no input</h2>
               <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
-                All 23 features are ordinary image statistics — focus, edge
-                density, colour moments, texture, noise — so the extractor was
-                rebuilt exactly. The file never leaves your machine.
+                The sixth model cannot be driven, and the reason is worth
+                showing rather than hiding: its 86 features have no names
+                anywhere in the artifact.
               </p>
             </div>
           </div>
-          <KycPanel model={KYC_MODEL} />
+          <DeepfakePanel />
         </section>
 
         {/* ── The registry, and what each model honestly needs ──────────── */}
@@ -331,13 +411,14 @@ export default function Lab() {
         </section>
 
         <Footnote>
-          Three models run entirely in the browser. The phishing classifier is a
-          TF-IDF vectoriser and a logistic regression; the KYC and account-takeover
-          models are LightGBM ensembles whose trees are walked directly. All of
-          them use weights exported from the Python artifacts, and parity is
-          asserted in CI: 7.8e-8 for the phishing model and 2.2e-19 across 80
-          vectors for the two ensembles, which is float noise rather than a
-          difference in behaviour. The Python
+          Five models run entirely in the browser. The phishing classifier is a
+          TF-IDF vectoriser and a logistic regression; transaction, voice, KYC and
+          account-takeover are LightGBM ensembles whose trees are walked directly,
+          categorical splits included. Every layer is checked against the Python
+          original in CI rather than assumed: 7.8e-8 for the phishing model,
+          1.4e-17 across 180 vectors for the four ensembles, and 6.7e-8 for the
+          74 audio features against librosa. All of that is float noise rather
+          than a difference in behaviour. The Python
           service ({LAB_URL}) adds the attack generator and live artifact
           verification, and nothing on this page requires it.
         </Footnote>
