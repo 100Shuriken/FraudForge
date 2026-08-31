@@ -25,7 +25,7 @@ import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { useReducedMotion } from "motion/react";
 // Named imports rather than `import * as THREE` so the bundler can drop the
 // rest of the library.
-import { AdditiveBlending, QuadraticBezierCurve3, Vector3 } from "three";
+import { AdditiveBlending, Color, QuadraticBezierCurve3, Vector3 } from "three";
 
 const SIGNAL = "#f7931a";  /* Bitcoin orange — the hardened detector */
 const FLAME  = "#ea580c";  /* burnt orange   — the red team's attack */
@@ -57,45 +57,191 @@ function fibonacciSphere(count, radius) {
   return pts;
 }
 
-/** The account: a point cloud with a sparse wireframe hull behind it. */
-function AccountGraph({ still }) {
+/**
+ * The account graph.
+ *
+ * The first version rotated a uniformly-distributed sphere, which is close to
+ * invisible: an even point cloud on a symmetric hull looks the same at every
+ * angle, so rotation alone reads as a still image. Four things now carry the
+ * motion, and all of them change the silhouette or the brightness rather than
+ * just the orientation:
+ *
+ *   compound spin  three axes at unrelated rates, so the wireframe never
+ *                  repeats a pose the eye has just seen
+ *   breathing      the whole graph expands and contracts slightly
+ *   twinkle        each node has its own phase, so the cloud shimmers — this
+ *                  is what makes it read as a live network rather than dots
+ *   traffic        packets run the surface, and the graph flares when the
+ *                  attack lands
+ */
+function AccountGraph({ still, progress }) {
   const group = useRef();
+  const shader = useRef();
+  const inner = useRef();
+
   const positions = useMemo(() => fibonacciSphere(NODES, 1.35), []);
 
-  useFrame((_, delta) => {
-    if (still || !group.current) return;
-    group.current.rotation.y += delta * 0.12;
-    group.current.rotation.x = Math.sin(Date.now() * 0.00012) * 0.12;
+  // One random phase per node, fixed for the lifetime of the scene so the
+  // shimmer is stable rather than reshuffling every frame.
+  const phases = useMemo(() => {
+    const a = new Float32Array(NODES);
+    for (let i = 0; i < NODES; i += 1) a[i] = Math.random();
+    return a;
+  }, []);
+
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uSize: { value: 21 },
+      uColor: { value: new Color("#9aa8bd") },
+      uFlare: { value: 0 },
+    }),
+    []
+  );
+
+  useFrame((state, delta) => {
+    if (!group.current) return;
+    const t = state.clock.elapsedTime;
+
+    if (shader.current) {
+      shader.current.uniforms.uTime.value = still ? 2.4 : t;
+      // The graph flares as the attack arrives, then settles.
+      const p = Math.min(progress.current, 1);
+      const arrival = p > 0.8 ? (p - 0.8) / 0.2 : 0;
+      shader.current.uniforms.uFlare.value = still ? 0.25 : arrival * arrival;
+    }
+
+    if (still) return;
+
+    // Three unrelated rates: the pose never repeats within a viewing.
+    group.current.rotation.y += delta * 0.34;
+    group.current.rotation.x = Math.sin(t * 0.31) * 0.26;
+    group.current.rotation.z = Math.cos(t * 0.19) * 0.14;
+
+    // Breathing, plus a sharper pulse when the attack lands.
+    const p = Math.min(progress.current, 1);
+    const arrival = p > 0.86 ? (p - 0.86) / 0.14 : 0;
+    const breathe = 1 + Math.sin(t * 0.85) * 0.035 + arrival * arrival * 0.06;
+    group.current.scale.setScalar(breathe);
+
+    // The hull counter-rotates a little, so the two layers separate visually
+    // instead of moving as one solid object.
+    if (inner.current) inner.current.rotation.y -= delta * 0.16;
   });
 
   return (
     <group ref={group}>
       <points>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[positions, 3]}
-          />
+          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+          <bufferAttribute attach="attributes-phase" args={[phases, 1]} />
         </bufferGeometry>
-        <pointsMaterial
-          size={0.035}
-          color={SLATE}
+        {/* A shader rather than pointsMaterial, because per-node twinkle is the
+            whole effect and pointsMaterial can only size every point alike. */}
+        <shaderMaterial
+          ref={shader}
+          uniforms={uniforms}
           transparent
-          opacity={0.85}
-          sizeAttenuation
+          depthWrite={false}
+          blending={AdditiveBlending}
+          vertexShader={`
+            attribute float phase;
+            uniform float uTime;
+            uniform float uSize;
+            uniform float uFlare;
+            varying float vT;
+            void main() {
+              float tw = 0.5 + 0.5 * sin(uTime * 1.7 + phase * 6.2831853);
+              vT = tw + uFlare * 0.30;
+              vec4 mv = modelViewMatrix * vec4(position, 1.0);
+              gl_PointSize = uSize * (0.50 + vT * 0.55) / -mv.z;
+              gl_Position = projectionMatrix * mv;
+            }
+          `}
+          fragmentShader={`
+            uniform vec3 uColor;
+            uniform float uFlare;
+            varying float vT;
+            void main() {
+              vec2 c = gl_PointCoord - 0.5;
+              float d = dot(c, c);
+              if (d > 0.25) discard;
+              float a = smoothstep(0.25, 0.0, d);
+              vec3 col = mix(uColor, vec3(1.0, 0.74, 0.34), clamp(uFlare * 0.45, 0.0, 1.0));
+              gl_FragColor = vec4(col * (0.55 + vT * 0.45), a * (0.26 + vT * 0.40));
+            }
+          `}
         />
       </points>
 
       {/* Sparse hull: reads as the graph's structure without costing polys. */}
-      <mesh>
+      <mesh ref={inner}>
         <icosahedronGeometry args={[1.34, 1]} />
         <meshBasicMaterial
           color={SIGNAL}
           wireframe
           transparent
-          opacity={0.14}
+          opacity={0.16}
         />
       </mesh>
+    </group>
+  );
+}
+
+/**
+ * Packets moving over the account's surface.
+ *
+ * Ordinary traffic, so it is deliberately quiet: small, slate-coloured, and
+ * on its own orbit. It exists to give the graph internal movement that does
+ * not depend on the attack cycle, so the scene is never completely still
+ * between approaches.
+ */
+const PACKETS = 5;
+
+function Traffic({ still }) {
+  const refs = useRef([]);
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: PACKETS }, () => ({
+        radius: 1.45 + Math.random() * 0.22,
+        speed: 0.25 + Math.random() * 0.35,
+        tilt: Math.random() * Math.PI,
+        phase: Math.random() * Math.PI * 2,
+      })),
+    []
+  );
+
+  useFrame((state) => {
+    const t = still ? 1.2 : state.clock.elapsedTime;
+    seeds.forEach((s, i) => {
+      const m = refs.current[i];
+      if (!m) return;
+      const a = s.phase + t * s.speed;
+      const x = Math.cos(a) * s.radius;
+      const z = Math.sin(a) * s.radius;
+      m.position.set(
+        x,
+        Math.sin(a * 1.3 + s.tilt) * s.radius * 0.42,
+        z * Math.cos(s.tilt)
+      );
+    });
+  });
+
+  return (
+    <group>
+      {seeds.map((_, i) => (
+        <mesh key={i} ref={(el) => (refs.current[i] = el)}>
+          <sphereGeometry args={[0.022, 6, 6]} />
+          <meshBasicMaterial
+            color={SLATE}
+            transparent
+            opacity={0.85}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -364,7 +510,8 @@ export default function AccountScene() {
 
       <CameraRig still={reduced} />
 
-      <AccountGraph still={reduced} />
+      <AccountGraph still={reduced} progress={progress} />
+      <Traffic still={reduced} />
 
       {/* Hardened: tighter orbit, reacts hard to the arrival. */}
       <DetectorRing
