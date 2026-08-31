@@ -155,7 +155,7 @@ export default function DeepfakePanel({ model }) {
               from.
             </p>
             <p>
-              This config records a feature <em>count</em> — 86 — and no names.
+              This config records a feature <em>count</em> of 86, and no names.
               The booster agrees: its feature names are{" "}
               <span className="font-mono text-[12px] text-fg">Column_0</span>{" "}
               through{" "}
@@ -164,7 +164,7 @@ export default function DeepfakePanel({ model }) {
               <span className="font-mono text-[12px] text-fg">
                 feature_names_in_
               </span>{" "}
-              on the estimator either — both are what you get when a model is
+              on the estimator either. Both are what you get when a model is
               fitted on a bare array rather than a labelled frame.
             </p>
             <p className="text-fg">
@@ -211,7 +211,7 @@ export default function DeepfakePanel({ model }) {
               </p>
               <p className="mt-3 rounded-md border border-white/10 bg-white/[0.03] px-3 py-2 text-body-sm text-fg-muted">
                 This is the ensemble&apos;s real output for the vector you set.
-                It is not a verdict about a video — no video was measured, and
+                It is not a verdict about a video. No video was measured, and
                 the artifact does not say what its columns are.
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function DeepfakePanel({ model }) {
           <p className="caption border-t border-white/10 pt-3">
             No column carries more than {(cols[0].g * 100).toFixed(1)}% of total
             gain and every one of the {anatomy.features} is used, which is also
-            why a partial guess at the extractor would not have worked — the
+            why a partial guess at the extractor would not have worked. The
             whole vector matters.
           </p>
         </Panel>

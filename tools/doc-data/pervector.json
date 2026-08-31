@@ -1,0 +1,236 @@
+{
+ "rows": [
+  {
+   "id": "feature_evasion",
+   "name": "Targeted feature suppression",
+   "cat": "model",
+   "steps": 360,
+   "legacy": 0.027777777777777776,
+   "hardened": 0.030555555555555555
+  },
+  {
+   "id": "subscription_trap",
+   "name": "Negative-option subscription",
+   "cat": "merchant",
+   "steps": 480,
+   "legacy": 0,
+   "hardened": 0.05625
+  },
+  {
+   "id": "refund_abuse",
+   "name": "Refund and chargeback abuse",
+   "cat": "behaviour",
+   "steps": 240,
+   "legacy": 0.1875,
+   "hardened": 0.30416666666666664
+  },
+  {
+   "id": "behavioral_drift",
+   "name": "Behavioural drift",
+   "cat": "behaviour",
+   "steps": 240,
+   "legacy": 0.3,
+   "hardened": 0.3541666666666667
+  },
+  {
+   "id": "collect_request_abuse",
+   "name": "Collect-request manipulation",
+   "cat": "social",
+   "steps": 270,
+   "legacy": 0,
+   "hardened": 0.3962962962962963
+  },
+  {
+   "id": "bec_thread",
+   "name": "Invoice thread hijack",
+   "cat": "social",
+   "steps": 270,
+   "legacy": 0.02962962962962963,
+   "hardened": 0.4148148148148148
+  },
+  {
+   "id": "sleeper_pacing",
+   "name": "Sleeper pacing",
+   "cat": "behaviour",
+   "steps": 330,
+   "legacy": 0.25757575757575757,
+   "hardened": 0.41818181818181815
+  },
+  {
+   "id": "romance_investment",
+   "name": "Long-con investment grooming",
+   "cat": "social",
+   "steps": 360,
+   "legacy": 0.38333333333333336,
+   "hardened": 0.44166666666666665
+  },
+  {
+   "id": "adversarial_probing",
+   "name": "Decision-boundary probing",
+   "cat": "model",
+   "steps": 270,
+   "legacy": 0.0962962962962963,
+   "hardened": 0.4444444444444444
+  },
+  {
+   "id": "vishing",
+   "name": "Voice-cloned executive call",
+   "cat": "social",
+   "steps": 210,
+   "legacy": 0.2761904761904762,
+   "hardened": 0.5095238095238095
+  },
+  {
+   "id": "velocity_anomaly",
+   "name": "Velocity burst",
+   "cat": "behaviour",
+   "steps": 270,
+   "legacy": 0.13333333333333333,
+   "hardened": 0.5777777777777777
+  },
+  {
+   "id": "task_scam",
+   "name": "Task and commission scam",
+   "cat": "social",
+   "steps": 420,
+   "legacy": 0.2119047619047619,
+   "hardened": 0.6047619047619047
+  },
+  {
+   "id": "device_switch",
+   "name": "Device and fingerprint rotation",
+   "cat": "model",
+   "steps": 210,
+   "legacy": 0.18095238095238095,
+   "hardened": 0.6142857142857143
+  },
+  {
+   "id": "document_forgery",
+   "name": "Generated document forgery",
+   "cat": "identity",
+   "steps": 150,
+   "legacy": 0.44,
+   "hardened": 0.6466666666666666
+  },
+  {
+   "id": "qr_swap",
+   "name": "QR substitution",
+   "cat": "social",
+   "steps": 390,
+   "legacy": 0,
+   "hardened": 0.6615384615384615
+  },
+  {
+   "id": "synthetic_identity",
+   "name": "Synthetic identity",
+   "cat": "identity",
+   "steps": 240,
+   "legacy": 0.3458333333333333,
+   "hardened": 0.675
+  },
+  {
+   "id": "transaction_laundering",
+   "name": "Transaction laundering",
+   "cat": "merchant",
+   "steps": 420,
+   "legacy": 0.2261904761904762,
+   "hardened": 0.6880952380952381
+  },
+  {
+   "id": "structuring",
+   "name": "Structuring and smurfing",
+   "cat": "behaviour",
+   "steps": 540,
+   "legacy": 0,
+   "hardened": 0.7351851851851852
+  },
+  {
+   "id": "support_impersonation",
+   "name": "Fake support agent",
+   "cat": "social",
+   "steps": 240,
+   "legacy": 0.26666666666666666,
+   "hardened": 0.75
+  },
+  {
+   "id": "fake_merchant",
+   "name": "Generated merchant front",
+   "cat": "merchant",
+   "steps": 360,
+   "legacy": 0.19444444444444445,
+   "hardened": 0.8027777777777778
+  },
+  {
+   "id": "mule_recruitment",
+   "name": "Mule network onboarding",
+   "cat": "identity",
+   "steps": 450,
+   "legacy": 0.08666666666666667,
+   "hardened": 0.8666666666666667
+  },
+  {
+   "id": "card_testing",
+   "name": "Card testing",
+   "cat": "behaviour",
+   "steps": 600,
+   "legacy": 0,
+   "hardened": 0.8883333333333333
+  },
+  {
+   "id": "credential_stuffing",
+   "name": "Credential stuffing at scale",
+   "cat": "takeover",
+   "steps": 480,
+   "legacy": 0.01875,
+   "hardened": 0.9041666666666667
+  },
+  {
+   "id": "session_hijack",
+   "name": "Live session hijack",
+   "cat": "takeover",
+   "steps": 210,
+   "legacy": 0.5761904761904761,
+   "hardened": 0.9428571428571428
+  },
+  {
+   "id": "deepfake_kyc",
+   "name": "Liveness bypass at onboarding",
+   "cat": "identity",
+   "steps": 180,
+   "legacy": 0.5333333333333333,
+   "hardened": 0.9666666666666667
+  },
+  {
+   "id": "video_deepfake",
+   "name": "Deepfake video authorisation",
+   "cat": "social",
+   "steps": 180,
+   "legacy": 0.5833333333333334,
+   "hardened": 0.9722222222222222
+  },
+  {
+   "id": "account_takeover",
+   "name": "Account takeover",
+   "cat": "takeover",
+   "steps": 210,
+   "legacy": 0.5571428571428572,
+   "hardened": 1
+  },
+  {
+   "id": "sim_swap",
+   "name": "SIM swap and OTP interception",
+   "cat": "takeover",
+   "steps": 180,
+   "legacy": 0.6722222222222223,
+   "hardened": 1
+  }
+ ],
+ "totals": {
+  "steps": 8760,
+  "legacy": 1591,
+  "hardened": 5444,
+  "value": 27706825.339999992,
+  "legVal": 10690951.339999998,
+  "hardVal": 19520164.380000003
+ }
+}

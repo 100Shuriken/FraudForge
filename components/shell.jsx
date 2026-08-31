@@ -510,7 +510,7 @@ export function VerdictLegend({ className = "", states = null }) {
         <span key={label} className="flex items-center gap-1.5">
           <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden />
           <span className="caption">
-            <span className="text-fg-muted">{label}</span> — {meaning}
+            <span className="text-fg-muted">{label}</span>: {meaning}
           </span>
         </span>
       ))}
@@ -624,6 +624,6 @@ export const DEFS = {
   f1: "The balance of recall and precision as a single number. Higher is better.",
   auc: "How well the model ranks fraud above legitimate traffic, from 0.5 (coin flip) to 1.0 (perfect).",
   fpr: "The share of legitimate payments wrongly flagged. This is the friction customers feel.",
-  stepUp: "The payment is challenged rather than blocked — a one-time code, a biometric, a call.",
+  stepUp: "The payment is challenged rather than blocked: a one-time code, a biometric, a call.",
   baseRate: "How rare fraud actually is in the live stream. Precision falls hard as it drops.",
 };

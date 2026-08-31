@@ -91,7 +91,7 @@ const REGISTRY = [
   { name: "transaction", Icon: CreditCard, label: "Transaction fraud",
     modality: "Tabular · LightGBM", features: "21 features",
     drivable: true,
-    note: "The red-team generator emits a different shape, which is why the backend adapter rejects its payloads — but the columns themselves are ordinary, and the artifact ships the vocabulary for all 13 categorical ones. State them and it runs." },
+    note: "The red-team generator emits a different shape, which is why the backend adapter rejects its payloads. But the columns themselves are ordinary, and the artifact ships the vocabulary for all 13 categorical ones. State them and it runs." },
   { name: "voice", Icon: Waveform, label: "Synthetic voice",
     modality: "Audio MFCC · LightGBM", features: "74 features",
     drivable: true,
@@ -167,8 +167,8 @@ export default function Lab() {
             the Python originals. Five are driven by feature extractors rebuilt
             from what each artifact specifies about itself. The sixth names none
             of its 86 features, so rather than invent an extractor it is driven by
-            its own input vector — the model is real either way, and the page
-            says which is which.
+            its own input vector. The model is real either way, and the page says
+            which is which.
           </PageHead>
         </PageHero>
 
@@ -327,7 +327,7 @@ export default function Lab() {
         <ModelSection
           Icon={IdentificationCard}
           title="KYC document fraud, from a real image"
-          blurb="All 23 features are ordinary image statistics — focus, edge density, colour moments, texture, noise — so the extractor was rebuilt exactly. The file never leaves your machine."
+          blurb="All 23 features are ordinary image statistics: focus, edge density, colour moments, texture, noise. That made the extractor exactly rebuildable, and the file never leaves your machine."
           load={() => import("@/lib/models/kyc.json")}
         >
           {(model) => <KycPanel model={model} />}
@@ -352,7 +352,7 @@ export default function Lab() {
             <div className="min-w-0">
               <h2 className="text-h2">Model registry</h2>
               <p className="prose-measure mt-1 text-body-sm text-fg-subtle">
-                All six artifacts load. Only one takes an input a browser can produce —
+                All six artifacts load. Only one takes an input a browser can produce,
                 the rest need audio, video, image or keystroke feature extractors that
                 are not part of this system. That gap is reported rather than papered over.
               </p>

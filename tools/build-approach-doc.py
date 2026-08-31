@@ -22,13 +22,17 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
-SP = os.path.dirname(os.path.abspath(__file__))
-OUT = r"c:\Users\tanay\Downloads\fraudforge-site\FraudForge-Approach.docx"
+# Measured inputs live beside this script so the document regenerates from
+# the repository alone, not from whatever happened to be in a scratch dir.
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+SP = os.path.join(HERE, "doc-data")
+OUT = os.path.join(ROOT, "FraudForge-Approach.docx")
 
 J = lambda n: json.load(open(os.path.join(SP, n), encoding="utf-8"))
 D, TR, PV, TX, MD = J("benchmark.json"), J("train.json"), J("pervector.json"), J("taxonomy.json"), J("models.json")
 ATO = J("ato_config.json")
-OP = json.load(open(r"c:\Users\tanay\Downloads\fraudforge-site\lib\operating-points.json", encoding="utf-8"))
+OP = json.load(open(os.path.join(ROOT, "lib", "operating-points.json"), encoding="utf-8"))
 AT = next(x for x in OP["sweep"] if x["t"] == OP["reviewThreshold"])
 T60 = next(x for x in OP["sweep"] if x["t"] == 0.6)
 at_base = lambda row, b=0.005: next(x for x in row["atBase"] if x["base"] == b)
@@ -179,8 +183,8 @@ callout(
 )
 para(
     "The Red Team plans and sequences attacks against synthetic accounts. The Blue Team "
-    "scores every resulting payment twice \u2014 once with flat threshold rules, once "
-    "against that account\u2019s own behavioural baseline \u2014 and the difference between "
+    "scores every resulting payment twice: once with flat threshold rules, once "
+    "against that account\u2019s own behavioural baseline. The difference between "
     "them is the measurement. The loop is:"
 )
 para("GENERATE  " + ARROW + "  ATTACK  " + ARROW + "  DETECT  " + ARROW +
@@ -264,12 +268,12 @@ para(
     "both are simulated, and both were measured.", space_after=10,
 )
 
-para("3.1  Adversarial Probing \u2014 learning the detector\u2019s boundary", style="Heading 2")
+para("3.1  Adversarial Probing: learning the detector\u2019s boundary", style="Heading 2")
 callout("Most fraud simulation assumes the attacker already knows what will be detected.",
         "What if the attacker learns the detector first, and only then commits the fraud?")
 para(
     "In an adversarial probing attack the attacker makes a series of controlled variations "
-    "\u2014 amount, timing, frequency, device, behavioural context \u2014 and observes which "
+    "(amount, timing, frequency, device, behavioural context) and observes which ones "
     "trip the defence. The objective is not evasion by luck. It is to map the decision "
     "boundary, then construct a later attack that sits inside the safe region."
 )
@@ -289,13 +293,13 @@ rich([
      f"this system to catch: "),
     (pc(fe["hardened"]), True, False, BAD),
     (f" against a legacy baseline of {pc(fe['legacy'])}. The account-relative scorer, which "
-     f"beats flat rules almost everywhere else, gains almost nothing here \u2014 because "
+     f"beats flat rules almost everywhere else, gains almost nothing here, because "
      "the attack is built to suppress exactly the features it relies on. That is the "
      "clearest possible demonstration that probing works, and a system reporting only its "
      "aggregate would never have surfaced it."),
 ])
 
-para("3.2  Sleeper Transaction Pacing \u2014 attacking the time horizon", style="Heading 2")
+para("3.2  Sleeper Transaction Pacing: attacking the time horizon", style="Heading 2")
 callout("A detector can be right about every payment and wrong about the account.",
         "\u201cThis transaction is not suspicious\u201d can be true eighteen times while "
         "\u201cthis account has become suspicious\u201d is also true.")
@@ -309,8 +313,8 @@ g = VEC["structuring"]["gen"]
 rich([
     ("Structuring and smurfing is specified as ", ),
     (f"amount {g['amount']}, velocity {g['velocity']}, steps {g['steps']}", False, False, None, True),
-    (" \u2014 eighteen payments that start at 55% of the account\u2019s normal amount and "
-     "drift up to 95%, deliberately never crossing it, while velocity climbs from 3 to 5 "
+    (". That is eighteen payments starting at 55% of the account\u2019s normal amount and "
+     "drifting up to 95%, deliberately never crossing it, while velocity climbs from 3 to 5 "
      "an hour. No fixed amount ceiling is ever touched, which is the entire point."),
 ])
 table(
@@ -355,7 +359,7 @@ table(
                  "highest-payoff one is chosen and a rationale recorded.", "scoreCandidates()"),
      ("3  Generate", "The vector\u2019s parameter block is interpolated across the sequence "
                      "into individual payments.", "generateAndScore()"),
-     ("4  Detect", "Every payment scored twice \u2014 flat rules and account-relative \u2014 "
+     ("4  Detect", "Every payment scored twice, by flat rules and by account-relative scoring, "
                    "with per-signal reasons attached.", "lib/risk.js"),
      ("5  Analyse", "Detected, missed, borderline, or through the boundary.", "lib/risk.js"),
      ("6  Harden", "Missed payments become labelled training data for the next round.",
@@ -382,7 +386,7 @@ rich([
     ("). No API key is configured and ", ),
     ("openai", False, False, None, True),
     (" is not in requirements, so the deployed build runs the deterministic planner "
-     "throughout \u2014 which is also why every figure in this document is exactly "
+     "throughout. That is also why every figure in this document is exactly "
      "reproducible from a seed. The LLM path is architecture, not a claim about what "
      "produced these numbers."),
 ])
@@ -442,7 +446,7 @@ table(
      ("Interaction volume", "key count deviation, mouse click count deviation")],
     widths=[1.5, 5.1], font=9,
 )
-caption("Only timings and counts are captured. The characters typed are never stored \u2014 "
+caption("Only timings and counts are captured. The characters typed are never stored, "
         "the panel in the Defense Lab enrols and scores entirely in the browser.")
 
 # ── 7 ────────────────────────────────────────────────────────────────────
@@ -509,8 +513,8 @@ rich([
 ])
 
 doc.add_page_break()
-para("7.4  Efficacy by attack vector \u2014 where the blind spots are", style="Heading 2")
-rich([("Every vector run against all 10 accounts at three seeds \u2014 "),
+para("7.4  Efficacy by attack vector: where the blind spots are", style="Heading 2")
+rich([("Every vector run against all 10 accounts at three seeds, for a total of "),
       (f"{num(PV['totals']['steps'])} scored payments", True),
       (". This table is the deliverable: it names which attacks the incumbent rules cannot "
        "see at all, and which defeat account-relative scoring too.")], space_after=6)
@@ -522,7 +526,7 @@ table(
     widths=[2.0, 1.6, 0.55, 0.85, 0.95], font=8.2, aligns=[None, None, "r", "r", "r"],
 )
 caption("Colour encodes performance, not which detector: under 34% red, 34\u201367% amber, "
-        "above 67% green \u2014 applied identically to both columns.")
+        "above 67% green, applied identically to both columns.")
 
 doc.add_page_break()
 para("7.5  Friction, measured properly", style="Heading 2")
@@ -533,10 +537,10 @@ rich([
 rich([
     ("Sample size. ", True),
     ("The benchmark scores 300 legitimate payments. One false positive in 300 reads as "
-     "0.33% \u2014 but the 95% Wilson interval runs 0.06% to 1.86%, a thirty-fold range. "
+     "0.33%, but the 95% Wilson interval runs 0.06% to 1.86%, a thirty-fold range. "
      "It cannot resolve the quantity it reports. Measured on "),
     (f"{num(OP['legitimate'])} legitimate payments the rate is {pc(AT['fpr'], 3)}", True),
-    (f" with a 95% interval of {pc(AT['fprLo'], 3)} to {pc(AT['fprHi'], 3)} \u2014 roughly "
+    (f", with a 95% interval of {pc(AT['fprLo'], 3)} to {pc(AT['fprHi'], 3)}. Roughly "
      "double, and narrow enough to plan against."),
 ])
 rich([
@@ -545,7 +549,7 @@ rich([
      "where every other payment is an attack. At a 0.5% base rate the same detector at the "
      "same threshold raises "),
     (f"{num(B005['alertsPerMillion'])} alerts per million, of which "
-     f"{num(B005['truePerMillion'])} are fraud \u2014 precision {pc(B005['precision'], 1)}", True),
+     f"{num(B005['truePerMillion'])} are fraud, a precision of {pc(B005['precision'], 1)}", True),
     (". Nothing about the model changed; only the arithmetic an operator has to do."),
 ])
 table(
@@ -598,7 +602,7 @@ table(
     widths=[1.4, 1.9, 2.1, 1.2], font=9,
 )
 caption("Of the 220 LightGBM vectors, 36 carry missing values and 9 carry a category the "
-        "model never saw \u2014 the two routing paths that fail silently when a port gets "
+        "model never saw. Those are the two routing paths that fail silently when a port gets "
         "them wrong.")
 
 para("8.2  Where the platform refuses to guess", style="Heading 2")
@@ -611,7 +615,7 @@ rich([("Synthetic voice is saturated. ", True, False, ACCENT),
 rich([("Deepfake has no feature names. ", True, False, ACCENT),
       (f"Its config records a count ({MD['deepfake']['features']}) and no names; the "
        "booster\u2019s names are Column_0..Column_85 and there is no feature_names_in_ on "
-       "the estimator \u2014 all three are what you get from fitting on a bare array. There "
+       "the estimator. All three are what you get from fitting on a bare array. There "
        "is no extractor to rebuild, so there is no video upload. The ensemble is real and "
        "responsive, so the panel drives its 86-dimensional vector directly instead. Nothing "
        "claims to know what Column_14 measures.")])
@@ -767,7 +771,7 @@ for n, (title, body) in enumerate([
     ("The novel contribution is the attack strategy, not just the classifier.",
      "Adversarial Probing tests whether an attacker can learn the decision boundary; "
      "Sleeper Pacing tests whether it can exploit a limited time horizon. Both are "
-     "implemented, and both are measurably the hardest vectors in the system to catch \u2014 "
+     "implemented, and both are measurably the hardest vectors in the system to catch: "
      f"targeted feature suppression at {pc(fe['hardened'])} against "
      f"{pc(byHard[-1]['hardened'])} for a loud attack, a {byHard[-1]['hardened'] / fe['hardened']:.0f}-fold "
      "spread the aggregate would have hidden."),
@@ -788,7 +792,7 @@ for n, (title, body) in enumerate([
 
 callout("The philosophy, in one sentence.",
         "FraudForge does not ask whether a fraud detector works. It asks how an attacker can "
-        "make it fail \u2014 and gives the defender a way to find and fix that failure before "
+        "make it fail, and gives the defender a way to find and fix that failure before "
         "the real world does.")
 
 doc.save(OUT)

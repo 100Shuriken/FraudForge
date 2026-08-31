@@ -66,7 +66,7 @@ export default function VoicePanel({ model }) {
     try {
       const { signal, duration, sourceRate, channels } = await decodeAudio(file);
       if (signal.length < 4096) {
-        throw new Error("That clip is too short to measure — try at least half a second.");
+        throw new Error("That clip is too short to measure. Try at least half a second.");
       }
       const f = extractAudioFeatures(signal, SAMPLE_RATE);
       setClip({ label, duration, sourceRate, channels, samples: signal.length });
@@ -182,7 +182,7 @@ export default function VoicePanel({ model }) {
             The clip is decoded, resampled to {SAMPLE_RATE.toLocaleString()} Hz and
             measured in this tab. Nothing is uploaded. The artifact names all 74
             features and the sample rate but not the framing, so this uses
-            librosa&apos;s defaults — n_fft 2048, hop 512, 128 mel bands — which
+            librosa&apos;s defaults (n_fft 2048, hop 512, 128 mel bands), which
             is checked against librosa itself in CI.
           </p>
 
@@ -190,7 +190,7 @@ export default function VoicePanel({ model }) {
             <p className="overline text-review">Finding: this model is saturated</p>
             <div className="mt-2 space-y-2 text-body-sm text-fg-muted">
               <p>
-                The extraction is verified — all 74 features match librosa to
+                The extraction is verified. All 74 features match librosa to
                 6.7e-8, and the same vectors scored in Python return the same
                 probabilities to three decimal places. The model is what is
                 unusual.
@@ -200,8 +200,9 @@ export default function VoicePanel({ model }) {
                 alarm tones that contain no voice at all. Sweeping 4,000 feature
                 vectors across a wide box around real extracted values, it never
                 once fell below its own tuned threshold of{" "}
-                <span className="font-mono text-fg">0.3154</span> — asserted in
-                CI, so this sentence fails the build if it stops being true.
+                <span className="font-mono text-fg">0.3154</span>. That is
+                asserted in CI, so this sentence fails the build if it stops
+                being true.
               </p>
               <p className="text-fg">
                 So it cannot currently separate a real voice from a synthetic
@@ -243,9 +244,9 @@ export default function VoicePanel({ model }) {
 
               <p className="mt-3 rounded-md border border-review/35 bg-review/10 px-3 py-2 text-body-sm text-fg-muted">
                 <span className="font-medium text-review">Read this with care.</span>{" "}
-                This artifact says <em>synthetic</em> to almost everything — see
-                the note below. The number above is the model’s real output; it is
-                not a reliable verdict about your clip.
+                This artifact says <em>synthetic</em> to almost everything; see
+                the note below. The number above is the model’s real output, but
+                it is not a reliable verdict about your clip.
               </p>
 
               <div className="mt-4 border-t border-white/10 pt-3">

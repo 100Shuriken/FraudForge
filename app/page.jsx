@@ -181,7 +181,7 @@ export default function Cockpit() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">Auto — let the planner choose</SelectItem>
+                <SelectItem value="auto">Auto: let the planner choose</SelectItem>
                 {meta?.families.map((f) => (
                   <SelectItem key={f.name} value={f.name}>
                     {f.label}

@@ -67,8 +67,8 @@ export default function OperatingPoints() {
               1 false positive in 300. The 95% interval runs{" "}
               <span className="font-mono text-fg-muted">
                 {pct(data.smallSample.lo)} – {pct(data.smallSample.hi)}
-              </span>{" "}
-              — a 30-fold range. This estimate could not resolve what it was
+              </span>
+              , a 30-fold range. This estimate could not resolve what it was
               reporting.
             </p>
           </div>

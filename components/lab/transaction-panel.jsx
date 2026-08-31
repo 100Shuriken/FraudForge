@@ -184,8 +184,8 @@ export default function TransactionPanel({ model }) {
               ))}
             </div>
             <p className="caption border-t border-white/10 pt-3">
-              The IEEE-CIS identity columns are anonymised in the source data — it
-              never says what any of them measure. The model has an opinion about
+              The IEEE-CIS identity columns are anonymised in the source data, so
+              it never says what any of them measure. The model has an opinion about
               them regardless, so they are offered as the model knows them rather
               than dressed up with meanings they do not have.
             </p>
@@ -252,8 +252,8 @@ export default function TransactionPanel({ model }) {
               step={1}
             />
             <p className="caption mt-2">
-              This one is a training statistic, not a property of the transaction
-              — the mean amount for its product category. The artifact does not
+              This one is a training statistic rather than a property of the
+              transaction: the mean amount for its product category. The artifact does not
               carry the five means, but it does reveal the four boundaries
               between them, recovered from the only four thresholds the 500 trees
               ever split this feature at:{" "}

@@ -90,7 +90,7 @@ export default function AtoPanel({ model }) {
           <p className="text-body-sm text-fg-subtle">
             {phase === "enrol" ? (
               <>Type the line below {ENROL_TARGET} times, naturally. This builds
-              the profile the model compares against — nothing is scored yet.</>
+              the profile the model compares against. Nothing is scored yet.</>
             ) : (
               <>Now type it once more. To see the model work, hand your keyboard
               to someone else for this round.</>
@@ -133,7 +133,7 @@ export default function AtoPanel({ model }) {
 
           <p className="caption border-t border-white/10 pt-3">
             Only timings, counts and pointer distances are measured. The
-            characters you type are never stored — the model does not use them.
+            characters you type are never stored, and the model does not use them.
           </p>
         </div>
       </Panel>
