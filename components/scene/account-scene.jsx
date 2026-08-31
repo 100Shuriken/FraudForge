@@ -18,13 +18,13 @@
  * Geometry is generated procedurally: no .glb, no .gltf, no asset pipeline.
  */
 
-import { useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
 import { useReducedMotion } from "motion/react";
 // Named imports rather than `import * as THREE` so the bundler can drop the
 // rest of the library.
-import { QuadraticBezierCurve3, Vector3 } from "three";
+import { AdditiveBlending, QuadraticBezierCurve3, Vector3 } from "three";
 
 const SIGNAL = "#f7931a";  /* Bitcoin orange — the hardened detector */
 const FLAME  = "#ea580c";  /* burnt orange   — the red team's attack */
@@ -163,9 +163,34 @@ function AttackPulse({ progress, still }) {
 
   return (
     <group>
+      {/* Core plus an additively-blended halo. Additive blending is what makes
+          overlapping bright geometry read as light rather than as paint, and
+          it costs one extra draw call instead of a full-screen bloom pass. */}
       <mesh ref={head}>
         <sphereGeometry args={[0.075, 12, 12]} />
-        <meshBasicMaterial color={FLAME} toneMapped={false} />
+        <meshBasicMaterial color={GOLD} toneMapped={false} />
+        <mesh scale={2.6}>
+          <sphereGeometry args={[0.075, 10, 10]} />
+          <meshBasicMaterial
+            color={FLAME}
+            transparent
+            opacity={0.45}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh scale={5.2}>
+          <sphereGeometry args={[0.075, 8, 8]} />
+          <meshBasicMaterial
+            color={FLAME}
+            transparent
+            opacity={0.16}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
       </mesh>
       {Array.from({ length: TRAIL }).map((_, i) => (
         <mesh key={i} ref={(el) => (trail.current[i] = el)}>
@@ -174,6 +199,8 @@ function AttackPulse({ progress, still }) {
             color={FLAME}
             transparent
             opacity={0.5 - i * 0.08}
+            blending={AdditiveBlending}
+            depthWrite={false}
             toneMapped={false}
           />
         </mesh>
@@ -219,10 +246,58 @@ function DetectorRing({ radius, tilt, color, opacity, reactivity, progress, stil
         color={color}
         transparent
         opacity={opacity}
+        blending={AdditiveBlending}
+        depthWrite={false}
         toneMapped={false}
       />
     </mesh>
   );
+}
+
+/**
+ * Camera rig.
+ *
+ * Two inputs, both cheap, both lerped so nothing snaps:
+ *
+ *   pointer  the scene leans a few degrees toward the cursor, which is what
+ *            makes a static render read as an object in a room rather than a
+ *            picture of one.
+ *   scroll   the camera pulls back and drops as the hero leaves the viewport,
+ *            so the object recedes rather than sliding away flatly.
+ *
+ * Both are damped toward a target every frame instead of being written
+ * directly, so a fast flick of the mouse does not jolt the scene.
+ */
+function CameraRig({ still }) {
+  const { camera, pointer } = useThree();
+  const scroll = useRef(0);
+  const target = useMemo(() => new Vector3(), []);
+
+  useEffect(() => {
+    if (still) return;
+    const onScroll = () => {
+      // 0 at the top, 1 once the hero is a viewport away.
+      scroll.current = Math.min(1, window.scrollY / 620);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [still]);
+
+  useFrame((_, delta) => {
+    if (still) return;
+    const k = 1 - Math.pow(0.0015, delta); // frame-rate independent damping
+
+    target.set(
+      pointer.x * 0.42,
+      pointer.y * 0.3 - scroll.current * 0.55,
+      4.6 + scroll.current * 1.15
+    );
+    camera.position.lerp(target, k);
+    camera.lookAt(0, 0, 0);
+  });
+
+  return null;
 }
 
 export default function AccountScene() {
@@ -256,6 +331,8 @@ export default function AccountScene() {
         onDecline={() => setDpr(1)}
         onIncline={() => setDpr(1.5)}
       />
+
+      <CameraRig still={reduced} />
 
       <AccountGraph still={reduced} />
 

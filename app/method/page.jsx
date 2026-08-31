@@ -1,7 +1,8 @@
 "use client";
 
 import { Shell, Panel, PageHead, PageHero, Footnote } from "@/components/shell";
-import { TracingBeam } from "@/components/aceternity";
+import { TracingBeam, CardSpotlight } from "@/components/aceternity";
+import { BlurFade } from "@/components/magic";
 import { TAXONOMY_STATS } from "@/lib/taxonomy";
 
 const LOOP = [
@@ -109,7 +110,7 @@ export default function Method() {
         {/* ── Claims. Three distinct treatments, because they say three
               different kinds of thing. ─────────────────────────────────── */}
         <div className="grid gap-4 lg:grid-cols-3">
-          {CLAIMS.map((c) => {
+          {CLAIMS.map((c, i) => {
             const accent =
               c.tone === "signal"
                 ? { border: "border-caught/40", text: "text-caught", dot: "bg-caught" }
@@ -117,9 +118,10 @@ export default function Method() {
                   ? { border: "border-review/40", text: "text-review", dot: "bg-review" }
                   : { border: "border-evaded/40", text: "text-evaded", dot: "bg-evaded" };
             return (
+              <BlurFade key={c.title} delay={i * 0.08} className="h-full">
+              <CardSpotlight className="h-full rounded-lg">
               <section
-                key={c.title}
-                className={`card border ${accent.border} flex flex-col p-5`}
+                className={`card corner-node relative z-1 flex h-full flex-col border p-6 ${accent.border}`}
               >
                 <h2 className={`text-h3 ${accent.text}`}>{c.title}</h2>
                 <ul className="mt-4 space-y-3">
@@ -134,6 +136,8 @@ export default function Method() {
                   ))}
                 </ul>
               </section>
+              </CardSpotlight>
+              </BlurFade>
             );
           })}
         </div>

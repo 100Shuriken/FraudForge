@@ -8,6 +8,7 @@ import {
 } from "@/components/shell";
 import { SpatialSequence, SequenceDetail } from "@/components/sequence";
 import { rateTone, countTone, costTone } from "@/lib/tone";
+import { BlurFade } from "@/components/magic";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -232,8 +233,9 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
               </header>
               <ol className="divide-y divide-edge">
                 {report.phases.map((ph, i) => (
-                  <li key={ph.id} className="flex gap-4 px-5 py-5">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-signal/15 font-mono text-[12px] font-semibold text-signal">
+                  <li key={ph.id} className="px-5 py-5">
+                    <BlurFade delay={i * 0.06} inView className="flex gap-4">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-signal/15 font-mono text-[12px] font-semibold text-signal ring-1 ring-signal/35">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1 space-y-2.5">
@@ -253,6 +255,7 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
                         ))}
                       </dl>
                     </div>
+                    </BlurFade>
                   </li>
                 ))}
               </ol>

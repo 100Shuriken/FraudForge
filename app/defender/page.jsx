@@ -6,7 +6,8 @@ import {
   Shell, Panel, Stat, Spinner, ErrorNote, PageHead, PageHero, Bar, Footnote,
   EmptyState, StatSkeleton, Hint, DEFS, pct,
 } from "@/components/shell";
-import { NumberTicker, BorderBeam } from "@/components/magic";
+import { NumberTicker, BorderBeam, BlurFade } from "@/components/magic";
+import { CardSpotlight } from "@/components/aceternity";
 import { rateTone, costTone } from "@/lib/tone";
 
 export default function Defender() {
@@ -128,12 +129,13 @@ export default function Defender() {
                   const prev = rounds[i - 1];
                   const delta = prev ? r.recall - prev.recall : null;
                   return (
+                    <BlurFade key={r.round} delay={i * 0.07}>
+                    <CardSpotlight className="rounded-lg">
                     <div
-                      key={r.round}
-                      className={`rounded-md border p-4 ${
+                      className={`corner-node relative z-1 rounded-lg border p-5 ${
                         i === rounds.length - 1
-                          ? "border-edge-strong bg-overlay/40"
-                          : "border-edge bg-inset"
+                          ? "border-signal/40 bg-signal/[0.04]"
+                          : "border-white/10 bg-inset"
                       }`}
                     >
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -187,6 +189,8 @@ export default function Defender() {
 
                       <p className="mt-2.5 text-body-sm text-fg-subtle">{r.description}</p>
                     </div>
+                    </CardSpotlight>
+                    </BlurFade>
                   );
                 })}
               </div>
@@ -225,8 +229,12 @@ export default function Defender() {
                 title="Where the attacker goes next"
                 description="Derived from the payments that still evade the final model."
               >
-                <div className="rounded-md border border-flame/35 bg-flame/6 p-4">
-                  <p className="text-body text-fg-muted">{result.evasionAdvice}</p>
+                <div className="relative flex h-full flex-col justify-center overflow-hidden rounded-lg border border-flame/40 bg-flame/[0.06] p-6">
+                  <BorderBeam colorFrom="var(--color-flame)" colorTo="var(--color-gold)" />
+                  <p className="overline mb-3 text-flame">Next move</p>
+                  <p className="prose-measure text-body text-fg-muted">
+                    {result.evasionAdvice}
+                  </p>
                 </div>
               </Panel>
             </div>
