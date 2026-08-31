@@ -12,8 +12,9 @@
     "check:labels": "node tools/checks/labelcheck.mjs",
     "check:identify": "node tools/checks/identifycheck.mjs",
     "capture": "node tools/checks/capture.mjs",
-    "check:all": "npm run check:functional && npm run check:colour && npm run check:charts && npm run check:labels && npm run check:identify && npm run check:phishing",
-    "check:phishing": "node tools/checks/phishingcheck.mjs"
+    "check:all": "npm run check:functional && npm run check:colour && npm run check:charts && npm run check:labels && npm run check:identify && npm run check:phishing && npm run check:lgbm",
+    "check:phishing": "node tools/checks/phishingcheck.mjs",
+    "check:lgbm": "node tools/checks/lgbmcheck.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
