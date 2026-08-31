@@ -13,3 +13,6 @@ frontend/dist/
 .DS_Store
 exports/
 *.zip
+
+# scratch probes
+_*.py
