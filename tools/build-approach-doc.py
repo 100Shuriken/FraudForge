@@ -612,6 +612,19 @@ rich([("Synthetic voice is saturated. ", True, False, ACCENT),
        "tested, including audio containing no voice. Across 4,000 vectors it never falls "
        "below its own tuned threshold of 0.3154. The product says so on the panel, and a CI "
        "check asserts it so the claim fails the build if it stops being true.")])
+rich([("KYC is measurable but out of range. ", True, False, ACCENT),
+      ("Its config names all 23 features without defining them, and several of those "
+       "names carry more than one standard definition. Tenengrad is the mean squared "
+       "Sobel gradient in the original paper and the mean magnitude in common use, "
+       "which differ by three orders of magnitude, and ‘Noise Diff’ is not a standard "
+       "name at all. The extractor computes the textbook definition of each and is "
+       "verified against an independent implementation, but the result lands outside "
+       "the range the model learned in: its trees split Tenengrad only over "
+       "[66.1, 70.5], where a document measures in the tens of thousands. The model "
+       "itself is sound. Sampling 4,000 vectors inside its own split ranges, 40% fall "
+       "below the decision threshold and the output spans the full range. So the panel "
+       "reports how many measured features land in range instead of presenting a "
+       "percentage as a verdict.")])
 rich([("Deepfake has no feature names. ", True, False, ACCENT),
       (f"Its config records a count ({MD['deepfake']['features']}) and no names; the "
        "booster\u2019s names are Column_0..Column_85 and there is no feature_names_in_ on "
@@ -739,6 +752,10 @@ table(
       f"{pc(AT['fprLo'], 3)}\u2013{pc(AT['fprHi'], 3)}", ("Demonstrated, synthetic corpus", ACCENT)),
      ("Production false-positive rate",
       "Needs real traffic to confirm the legitimate distribution", ("Not established", BAD)),
+     ("KYC scoring from a real image",
+      "Extractor verified against an independent implementation, but the feature "
+      "definitions behind the names are not recoverable from the artifact",
+      ("Measurable, out of range", BAD)),
      ("Voice and deepfake detection",
       "One artifact saturated, one unspecified", ("Does not work as delivered", BAD))],
     widths=[2.2, 2.9, 1.5], font=8.5,

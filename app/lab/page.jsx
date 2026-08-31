@@ -103,7 +103,7 @@ const REGISTRY = [
   { name: "kyc", Icon: IdentificationCard, label: "KYC document fraud",
     modality: "Image stats · LightGBM", features: "23 features",
     drivable: true,
-    note: "Its config names all 23 features and every one is an ordinary image statistic, so the extractor was rebuilt in the browser. Drop in a document photo below." },
+    note: "Its config names all 23 features but does not define them, and a few of those names have several standard definitions. The extractor computes the textbook one for each, which turns out not to be what the training pipeline used. The panel shows the gap." },
   { name: "ato", Icon: Fingerprint, label: "Account takeover",
     modality: "Keystroke dynamics · LightGBM", features: "19 features",
     drivable: true,
@@ -327,7 +327,7 @@ export default function Lab() {
         <ModelSection
           Icon={IdentificationCard}
           title="KYC document fraud, from a real image"
-          blurb="All 23 features are ordinary image statistics: focus, edge density, colour moments, texture, noise. That made the extractor exactly rebuildable, and the file never leaves your machine."
+          blurb="All 23 features are ordinary image statistics, so an extractor is buildable. Whether it is the right one is a separate question, and driving this model answers it. The file never leaves your machine."
           load={() => import("@/lib/models/kyc.json")}
         >
           {(model) => <KycPanel model={model} />}

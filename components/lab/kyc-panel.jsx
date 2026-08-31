@@ -6,6 +6,39 @@ import { Panel, Spinner } from "@/components/shell";
 import { BlurFade, BorderBeam } from "@/components/magic";
 import { score } from "@/lib/lgbm";
 import { extractImageFeatures, loadImage } from "@/lib/image-features";
+import domain from "@/lib/models/kyc-domain.json";
+
+/**
+ * How much of this image the model is actually equipped to judge.
+ *
+ * A boosted ensemble only learned anything inside the range its training data
+ * covered. Hand it a value outside every threshold it ever split a feature at
+ * and every tree takes the same branch, so the output stops depending on that
+ * feature. Enough of those and the answer is a constant, which is
+ * indistinguishable from a confident verdict.
+ *
+ * That is what happens here. The config names all 23 features but does not
+ * define them, and "Tenengrad" and "Noise Diff" each have several standard
+ * definitions that differ by orders of magnitude. This extractor computes the
+ * textbook one for each; the training pipeline evidently computed something
+ * else, because the model splits Tenengrad only over [66, 70] where a document
+ * measures in the thousands.
+ *
+ * So the panel measures the overlap and says so, rather than reporting a
+ * percentage that looks like the real ones elsewhere on this page.
+ */
+function coverage(features) {
+  const checked = domain.features.filter((f) => f.splits > 0);
+  const inside = checked.filter((f) => {
+    const v = features[f.name];
+    return typeof v === "number" && v >= f.lo && v <= f.hi;
+  });
+  return {
+    inside: inside.length,
+    total: checked.length,
+    outside: checked.filter((f) => !inside.includes(f)),
+  };
+}
 
 /* Shown alongside the verdict, because the interesting part of this model is
    that its inputs are legible: a reader can look at the focus and noise
@@ -19,10 +52,24 @@ const HIGHLIGHT = [
   ["Brightness Mean", "brightness", (v) => v?.toFixed(1) ?? "—"],
 ];
 
+/**
+ * Two feature vectors set by hand inside the range the model was trained on.
+ *
+ * These are NOT measurements of any document. No image was captured, and
+ * nothing here was extracted from one. They exist because the model does work
+ * when its inputs land where it learned: sampling 4,000 vectors inside its own
+ * split ranges, 40% come out below the decision threshold and the output spans
+ * the full 0 to 1. That is worth being able to show, given that a real
+ * uploaded image cannot currently demonstrate it.
+ *
+ * They were originally labelled as camera captures of a genuine and a forged
+ * ID, which presented invented numbers as evidence. The numbers are unchanged;
+ * the labels now say what they are.
+ */
 const PRESETS = [
   {
-    label: "Legit National ID",
-    desc: "Crisp camera capture with natural paper fiber & sensor grain",
+    label: "Vector inside the trained range",
+    desc: "Hand-set values, not a measurement. Shows the model responding when its inputs land where it learned.",
     features: {
       Width: 2400, Height: 1600, "Aspect Ratio": 1.5,
       "Brightness Mean": 185.0, "Brightness Std": 58.0, "Brightness Median": 192.0, "Brightness Min": 0, "Brightness Max": 255,
@@ -34,8 +81,8 @@ const PRESETS = [
     },
   },
   {
-    label: "Tampered / Forged ID",
-    desc: "Digital text replacement with blurred boundaries & suppressed noise",
+    label: "Vector shifted toward tampering",
+    desc: "The same hand-set vector with focus, edge density and noise reduced. Also not a measurement.",
     features: {
       Width: 1920, Height: 1080, "Aspect Ratio": 1.77,
       "Brightness Mean": 180.0, "Brightness Std": 40.0, "Brightness Median": 185.0, "Brightness Min": 10, "Brightness Max": 240,
@@ -57,6 +104,7 @@ export default function KycPanel({ model }) {
   const [preview, setPreview] = useState(null);
   const [features, setFeatures] = useState(null);
   const [result, setResult] = useState(null);
+  const [cover, setCover] = useState(null);
   const input = useRef(null);
 
   // Mirrors the live preview URL so unmount cleanup does not re-run on every upload
@@ -83,6 +131,7 @@ export default function KycPanel({ model }) {
       });
       setFeatures(f);
       setResult(score(model, f));
+      setCover(coverage(f));
     } catch (e) {
       setError(e.message || "That image could not be read.");
       setResult(null);
@@ -158,7 +207,7 @@ export default function KycPanel({ model }) {
 
           {/* Quick preset tests */}
           <div>
-            <p className="overline mb-2">Or test reference forensic samples</p>
+            <p className="overline mb-2">Or drive the model with a stated vector</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {PRESETS.map((p) => (
                 <button
@@ -175,6 +224,11 @@ export default function KycPanel({ model }) {
                 </button>
               ))}
             </div>
+            <p className="caption mt-2">
+              Neither of these is a measurement of a document. They are feature
+              vectors set by hand inside the range the model was trained on,
+              included because an uploaded image currently lands outside it.
+            </p>
           </div>
 
           {error ? <p className="text-body-sm text-evaded">{error}</p> : null}
@@ -234,15 +288,25 @@ export default function KycPanel({ model }) {
               >
                 {(result.probability * 100).toFixed(1)}%
               </p>
-              <p className="mt-2 text-body-sm text-fg-muted">
-                {result.prediction === "fraud"
-                  ? "Elevated likelihood of digital tampering, splicing, or noise suppression."
-                  : "Consistent with camera sensor PRNU noise, natural focus & paper substrate."}
+              <p className="caption mt-2 text-fg-subtle">
+                {result.supplied} of {result.features} features measured · decision
+                threshold {result.threshold.toFixed(2)}
               </p>
-              <p className="caption mt-1 text-fg-subtle">
-                {result.supplied} of {result.features} features evaluated · decision threshold{" "}
-                {result.threshold.toFixed(2)}
-              </p>
+
+              {cover && cover.inside < cover.total * 0.6 ? (
+                <div className="mt-3 rounded-md border border-review/35 bg-review/10 px-3 py-2">
+                  <p className="text-body-sm text-fg-muted">
+                    <span className="font-medium text-review">
+                      Read this number with care.
+                    </span>{" "}
+                    Only {cover.inside} of {cover.total} measured features land
+                    inside the range this model was trained on, so most of its
+                    trees are taking the same branch whatever the image shows.
+                    The percentage above is the model’s real output, but it is
+                    not a reliable verdict about this document.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mt-4 border-t border-white/10 pt-3">
                 <p className="overline mb-2">Measured Image Statistics</p>
