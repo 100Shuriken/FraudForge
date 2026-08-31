@@ -1,6 +1,6 @@
 "use client";
 
-import { Shell, Panel, PageHead, Footnote } from "@/components/shell";
+import { Shell, Panel, PageHead, PageHero, Footnote } from "@/components/shell";
 import { TracingBeam } from "@/components/aceternity";
 import { TAXONOMY_STATS } from "@/lib/taxonomy";
 
@@ -66,11 +66,13 @@ export default function Method() {
   return (
     <Shell>
       <div className="space-y-8">
-        <PageHead kicker="Evidence" title="How it works, and what it does not claim"
-          highlight="does not claim">
-          The honest version. What the loop does step by step, which numbers are measured,
-          where the approach is weak, and what deploying it would actually involve.
-        </PageHead>
+        <PageHero>
+          <PageHead kicker="Evidence" title="How it works, and what it does not claim"
+            highlight="does not claim">
+            The honest version. What the loop does step by step, which numbers are measured,
+            where the approach is weak, and what deploying it would actually involve.
+          </PageHead>
+        </PageHero>
 
         {/* ── The loop, as a real numbered sequence ─────────────────────────
             The previous version faked progression with an inline

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { FileArrowDown, Printer, ArrowsClockwise } from "@phosphor-icons/react";
 import {
-  Shell, Panel, Stat, Verdict, Spinner, ErrorNote, PageHead, Footnote,
+  Shell, Panel, Stat, Verdict, Spinner, ErrorNote, PageHead, PageHero, Footnote,
   StatSkeleton, Hint, DEFS, pct, money,
 } from "@/components/shell";
 import { SpatialSequence, SequenceDetail } from "@/components/sequence";
@@ -106,12 +106,14 @@ Value stopped: <b>$${report.summary.valueStopped.toLocaleString()}</b> &nbsp; Va
         <ErrorNote>{error}</ErrorNote>
 
         <div className="ff-no-print space-y-5">
-          <PageHead kicker="Evidence" title="One incident, start to finish"
-            highlight="start to finish">
-            Who was targeted, why that attack was chosen, what was sent, what each detector
-            said, what got through, and what the model learned. Computed in a single pass so
-            every section describes the same run.
-          </PageHead>
+          <PageHero>
+            <PageHead kicker="Evidence" title="One incident, start to finish"
+              highlight="start to finish">
+              Who was targeted, why that attack was chosen, what was sent, what each detector
+              said, what got through, and what the model learned. Computed in a single pass so
+              every section describes the same run.
+            </PageHead>
+          </PageHero>
 
           <div className="card grid gap-4 p-5 lg:grid-cols-12">
             <div className="lg:col-span-5">

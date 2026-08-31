@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Shell, Panel, Stat, Verdict, ErrorNote, PageHead, Bar, Footnote,
+  Shell, Panel, Stat, Verdict, ErrorNote, PageHead, PageHero, Bar, Footnote,
   Hint, Skeleton, AccentScope, DEFS, pct, money,
 } from "@/components/shell";
 import { Slider } from "@/components/ui/slider";
@@ -128,12 +128,14 @@ export default function Sandbox() {
       <div className="space-y-8">
         <ErrorNote>{error}</ErrorNote>
 
-        <PageHead kicker="Analysis" title="Push on it yourself"
-          highlight="yourself">
-          Three things you can drive directly: score a payment you build by hand, move the
-          decision threshold and watch the trade move with it, then apply those rates at a
-          realistic fraud base rate and see what survives.
-        </PageHead>
+        <PageHero>
+          <PageHead kicker="Analysis" title="Push on it yourself"
+            highlight="yourself">
+            Three things you can drive directly: score a payment you build by hand, move the
+            decision threshold and watch the trade move with it, then apply those rates at a
+            realistic fraud base rate and see what survives.
+          </PageHead>
+        </PageHero>
 
         {/* ── 1 · AI Defense Lab ────────────────────────────────────────── */}
         <section className="space-y-4">

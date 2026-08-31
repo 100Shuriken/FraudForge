@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Play, Lightning } from "@phosphor-icons/react";
 import {
-  Shell, Panel, Stat, Spinner, ErrorNote, PageHead, Footnote, EmptyState,
+  Shell, Panel, Stat, Spinner, ErrorNote, PageHead, PageHero, Footnote, EmptyState,
   StatSkeleton, DEFS, pct,
 } from "@/components/shell";
 import { SpatialSequence, SequenceDetail } from "@/components/sequence";
@@ -86,45 +86,47 @@ function GenerateInner() {
     <div className="space-y-8">
       <ErrorNote>{error}</ErrorNote>
 
-      <PageHead
-        kicker="Pillar 2 · Generate"
-        title="Synthesise every vector, at scale"
-        highlight="at scale"
-        action={
-          <div className="flex items-end gap-2.5">
-            <div className="w-[210px]">
-              <label htmlFor="gen-target" className="label mb-1.5 block">
-                Target
-              </label>
-              <Select value={targetId} onValueChange={setTargetId}>
-                <SelectTrigger id="gen-target" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {meta?.customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} · {c.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <PageHero>
+        <PageHead
+          kicker="Pillar 2 · Generate"
+          title="Synthesise every vector, at scale"
+          highlight="at scale"
+          action={
+            <div className="flex items-end gap-2.5">
+              <div className="w-[210px]">
+                <label htmlFor="gen-target" className="label mb-1.5 block">
+                  Target
+                </label>
+                <Select value={targetId} onValueChange={setTargetId}>
+                  <SelectTrigger id="gen-target" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {meta?.customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} · {c.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <button
+                type="button"
+                onClick={runSweep}
+                disabled={busy || !meta}
+                aria-busy={busy}
+                className="btn btn-attack"
+              >
+                {busy ? <><Spinner /> Running</> : <><Play size={13} weight="fill" /> Sweep all</>}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={runSweep}
-              disabled={busy || !meta}
-              aria-busy={busy}
-              className="btn btn-attack"
-            >
-              {busy ? <><Spinner /> Running</> : <><Play size={13} weight="fill" /> Sweep all</>}
-            </button>
-          </div>
-        }
-      >
-        Every vector in the taxonomy generated against one account, then scored. Sorted
-        worst first, so the account&apos;s weakest surfaces surface immediately. Select any
-        family to generate a full sequence and inspect it.
-      </PageHead>
+          }
+        >
+          Every vector in the taxonomy generated against one account, then scored. Sorted
+          worst first, so the account&apos;s weakest surfaces surface immediately. Select any
+          family to generate a full sequence and inspect it.
+        </PageHead>
+      </PageHero>
 
       {busy && !sweep ? <StatSkeleton /> : null}
 

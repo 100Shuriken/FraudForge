@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Play, ShieldCheck, TrendUp, TrendDown } from "@phosphor-icons/react";
 import {
-  Shell, Panel, Stat, Spinner, ErrorNote, PageHead, Bar, Footnote,
+  Shell, Panel, Stat, Spinner, ErrorNote, PageHead, PageHero, Bar, Footnote,
   EmptyState, StatSkeleton, Hint, DEFS, pct,
 } from "@/components/shell";
 import { NumberTicker, BorderBeam } from "@/components/magic";
@@ -42,31 +42,33 @@ export default function Defender() {
       <div className="space-y-8">
         <ErrorNote>{error}</ErrorNote>
 
-        <PageHead
-          kicker="Pillar 3 · Defend"
-          title="The misses become the training data"
-          highlight="training data"
-          action={
-            <button
-              type="button"
-              onClick={run}
-              disabled={busy}
-              aria-busy={busy}
-              className="btn btn-primary"
-            >
-              {busy ? (
-                <><Spinner /> Training</>
-              ) : (
-                <><Play size={14} weight="fill" /> {result ? "Run again" : "Run three rounds"}</>
-              )}
-            </button>
-          }
-        >
-          A class-weighted logistic regression trained three times. Each pass mines the
-          payments the previous model let through and retrains on them, measured against a
-          held-out split that never changes so the rounds stay comparable. Every run draws
-          a fresh seed.
-        </PageHead>
+        <PageHero>
+          <PageHead
+            kicker="Pillar 3 · Defend"
+            title="The misses become the training data"
+            highlight="training data"
+            action={
+              <button
+                type="button"
+                onClick={run}
+                disabled={busy}
+                aria-busy={busy}
+                className="btn btn-primary"
+              >
+                {busy ? (
+                  <><Spinner /> Training</>
+                ) : (
+                  <><Play size={14} weight="fill" /> {result ? "Run again" : "Run three rounds"}</>
+                )}
+              </button>
+            }
+          >
+            A class-weighted logistic regression trained three times. Each pass mines the
+            payments the previous model let through and retrains on them, measured against a
+            held-out split that never changes so the rounds stay comparable. Every run draws
+            a fresh seed.
+          </PageHead>
+        </PageHero>
 
         {busy && !result ? <StatSkeleton /> : null}
 

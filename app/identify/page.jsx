@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, MagnifyingGlass, CaretRight } from "@phosphor-icons/react";
-import { Shell, Stat, PageHead, EmptyState, Footnote } from "@/components/shell";
+import { Shell, Stat, PageHead, PageHero, EmptyState, Footnote } from "@/components/shell";
 import { CATEGORIES, VECTORS, TAXONOMY_STATS } from "@/lib/taxonomy";
 import { CardSpotlight } from "@/components/aceternity";
 import {
@@ -59,13 +59,15 @@ export default function Identify() {
         {/* Finding 18: the four counts belong to the tiles directly below, so
             the paragraph no longer repeats them. "28" was stated three times
             inside 400px — here, in the tile, and in "Showing 28 of 28". */}
-        <PageHead kicker="Pillar 1 · Identify" title="The attack surface, mapped"
-          highlight="mapped">
-          Every GenAI-enabled payment fraud vector this system can actually
-          generate, mapped by category, payment rail and attack surface. Each one
-          carries the generator parameters that let the next pillar reproduce it,
-          which is what makes this a working index rather than a list of ideas.
-        </PageHead>
+        <PageHero>
+          <PageHead kicker="Pillar 1 · Identify" title="The attack surface, mapped"
+            highlight="mapped">
+            Every GenAI-enabled payment fraud vector this system can actually
+            generate, mapped by category, payment rail and attack surface. Each one
+            carries the generator parameters that let the next pillar reproduce it,
+            which is what makes this a working index rather than a list of ideas.
+          </PageHead>
+        </PageHero>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Stat emphasis label="Attack vectors" value={TAXONOMY_STATS.vectors}

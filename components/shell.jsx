@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Spotlight } from "@/components/aceternity";
 
 /* Navigation is grouped so the rail reads as a process, not a flat list. The
    old second line on every item ("Pillar 1", "Analysis", "Evidence") exposed an
@@ -215,6 +216,27 @@ function Mark() {
 }
 
 /* ---- Page furniture ----------------------------------------------------- */
+
+/**
+ * PageHero.
+ *
+ * Every page opens on the same lit band: the network lattice, a drifting
+ * energy field, and the spotlight sweep. Before this, only the Cockpit had a
+ * hero treatment and every other page started cold on flat void — which is
+ * most of why they read as unfinished next to it.
+ *
+ * Centralised deliberately. A per-page version of this would drift within a
+ * week, and the whole point of the token layer is that pages compose rather
+ * than invent.
+ */
+export function PageHero({ children, className = "" }) {
+  return (
+    <div className={`hero-field relative px-5 py-8 lg:px-9 lg:py-10 ${className}`}>
+      <Spotlight />
+      <div className="relative z-1">{children}</div>
+    </div>
+  );
+}
 
 /**
  * PageHead.
