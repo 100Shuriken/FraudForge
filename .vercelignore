@@ -1,9 +1,13 @@
+# Root-anchored on purpose: a bare `lab/` matches a directory of that name at
+# ANY depth and silently excluded app/lab/, so the Defense Lab route 404d in
+# production while still appearing in the nav.
+#
 # The Python service is deployed separately (see render.yaml); Vercel has no
 # Python runtime and does not need 13MB of model artifacts in the build.
-lab/
+/lab/
 
 # Design review screenshots, regenerated with `npm run capture`.
-design-baseline/
+/design-baseline/
 
 # Local verification harness — never runs in the Vercel build.
-tools/checks/
+/tools/checks/
