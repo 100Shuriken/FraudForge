@@ -1,33 +1,153 @@
-import { runAttack, runAllAttacks } from "@/lib/lab-engine";
+
+import {
+  runAttack,
+  runAllAttacks,
+  CUSTOMERS,
+  ATTACK_FAMILIES,
+} from "@/lib/lab-engine";
 import { legacyScore } from "@/lib/risk";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
-  const body = await request.json().catch(() => ({}));
+  let body;
 
-  if (body.mode === "all") {
-    return Response.json(runAllAttacks(body.targetId, body.seed ?? null));
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json(
+      { error: "Request body must contain valid JSON." },
+      { status: 400 }
+    );
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json(
+      { error: "Request body must be a JSON object." },
+      { status: 400 }
+    );
+  }
+
+  const targetId = body.targetId ?? "C0001";
+
+  if (
+    typeof targetId !== "string" ||
+    !CUSTOMERS.some((customer) => customer.id === targetId)
+  ) {
+    return Response.json(
+      { error: "Invalid targetId. Select a valid customer." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    body.mode != null &&
+    !["all", "single"].includes(body.mode)
+  ) {
+    return Response.json(
+      { error: 'Invalid mode. Use "single" or "all".' },
+      { status: 400 }
+    );
+  }
+
+  // Normalize and validate inputs before either execution path.
+  const attackType = body.attackType ?? null;
+  const difficulty = body.difficulty ?? "medium";
+  const intensity = body.intensity ?? 0.7;
+
+  if (
+    attackType !== null &&
+    (typeof attackType !== "string" ||
+      !ATTACK_FAMILIES.some((family) => family.name === attackType))
+  ) {
+    return Response.json(
+      { error: "Invalid attackType. Select a supported attack family." },
+      { status: 400 }
+    );
+  }
+
+  if (!["easy", "medium", "hard"].includes(difficulty)) {
+    return Response.json(
+      { error: 'Invalid difficulty. Use "easy", "medium", or "hard".' },
+      { status: 400 }
+    );
+  }
+
+  if (
+    typeof intensity !== "number" ||
+    !Number.isFinite(intensity) ||
+    intensity < 0 ||
+    intensity > 1
+  ) {
+    return Response.json(
+      { error: "Intensity must be a finite number between 0 and 1." },
+      { status: 400 }
+    );
+  }
+
+  if (body.seed != null && !Number.isSafeInteger(body.seed)) {
+    return Response.json(
+      { error: "Seed must be a safe integer." },
+      { status: 400 }
+    );
+  }
+
+  // Batch mode offsets the seed for each attack family.
+  if (body.mode === "all") {
+    const maxBatchSeed =
+      Number.MAX_SAFE_INTEGER - (ATTACK_FAMILIES.length - 1);
+    const minBatchSeed =
+      Number.MIN_SAFE_INTEGER;
+
+    if (
+      body.seed != null &&
+      (body.seed > maxBatchSeed || body.seed < minBatchSeed)
+    ) {
+      return Response.json(
+        {
+          error: `Batch seed must be between ${minBatchSeed} and ${maxBatchSeed} so all attack seeds remain safe integers.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    return Response.json(
+      runAllAttacks(targetId, body.seed ?? null)
+    );
+  }
+
+  // Single-attack mode.
   const run = runAttack({
-    targetId: body.targetId,
-    attackType: body.attackType ?? null,
-    difficulty: body.difficulty ?? "medium",
-    intensity: body.intensity ?? 0.7,
+    targetId,
+    attackType,
+    difficulty,
+    intensity,
     seed: body.seed ?? null,
   });
 
-  // Score every step with the legacy detector too, so the UI can show the gap
-  // on a per-payment basis rather than only in aggregate.
-  const records = run.records.map((r) => {
-    const legacy = legacyScore(r.features);
-    return { ...r, legacyFlagged: legacy.flagged, legacyReasons: legacy.reasons };
+  // Score every step with the legacy detector too.
+  const records = run.records.map((record) => {
+    const legacy = legacyScore(record.features);
+
+    return {
+      ...record,
+      legacyFlagged: legacy.flagged,
+      legacyReasons: legacy.reasons,
+    };
   });
 
-  const legacyCaught = records.filter((r) => r.legacyFlagged).length;
-  const valueTotal = records.reduce((a, r) => a + r.amount, 0);
-  const valueStopped = records.filter((r) => r.flagged).reduce((a, r) => a + r.amount, 0);
+  const legacyCaught = records.filter(
+    (record) => record.legacyFlagged
+  ).length;
+
+  const valueTotal = records.reduce(
+    (total, record) => total + record.amount,
+    0
+  );
+
+  const valueStopped = records
+    .filter((record) => record.flagged)
+    .reduce((total, record) => total + record.amount, 0);
 
   return Response.json({
     ...run,
@@ -36,7 +156,9 @@ export async function POST(request) {
       legacyCaught,
       hardenedCaught: run.defence.flagged,
       total: records.length,
-      legacyDetectionRate: Number((legacyCaught / records.length).toFixed(4)),
+      legacyDetectionRate: records.length
+        ? Number((legacyCaught / records.length).toFixed(4))
+        : 0,
       valueTotal: Number(valueTotal.toFixed(2)),
       valueStopped: Number(valueStopped.toFixed(2)),
       valueThrough: Number((valueTotal - valueStopped).toFixed(2)),
