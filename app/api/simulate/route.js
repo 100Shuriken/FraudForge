@@ -50,19 +50,7 @@ export async function POST(request) {
     );
   }
 
-  if (body.mode === "all") {
-    if (body.seed != null && !Number.isSafeInteger(body.seed)) {
-      return Response.json(
-        { error: "Seed must be a safe integer." },
-        { status: 400 }
-      );
-    }
-
-    return Response.json(
-      runAllAttacks(targetId, body.seed ?? null)
-    );
-  }
-
+  // Normalize and validate inputs before either execution path.
   const attackType = body.attackType ?? null;
   const difficulty = body.difficulty ?? "medium";
   const intensity = body.intensity ?? 0.7;
@@ -104,6 +92,31 @@ export async function POST(request) {
     );
   }
 
+  // Batch mode offsets the seed for each attack family.
+  if (body.mode === "all") {
+    const maxBatchSeed =
+      Number.MAX_SAFE_INTEGER - (ATTACK_FAMILIES.length - 1);
+    const minBatchSeed =
+      Number.MIN_SAFE_INTEGER;
+
+    if (
+      body.seed != null &&
+      (body.seed > maxBatchSeed || body.seed < minBatchSeed)
+    ) {
+      return Response.json(
+        {
+          error: `Batch seed must be between ${minBatchSeed} and ${maxBatchSeed} so all attack seeds remain safe integers.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    return Response.json(
+      runAllAttacks(targetId, body.seed ?? null)
+    );
+  }
+
+  // Single-attack mode.
   const run = runAttack({
     targetId,
     attackType,
